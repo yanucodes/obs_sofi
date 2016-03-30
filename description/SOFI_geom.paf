@@ -28,10 +28,9 @@ Raft: {
         offset: 0. 0.
     }
 }
-#index - location of ccd in raft
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-#right now the indexes are chosen so that bottom left quadrant is 0,0 but the question is whether it is right
+#not sure about diskCoordSys, amp, sensor or camera (sensor and camera coordinates should be the same in case of SOFI)
 Ccd: {
     ptype: "default"
     pixelSize: 18.5 # in microns
@@ -81,29 +80,29 @@ Amp: {
     ptype: "topleft"
     datasec: 0 0 2047 2047
     biassec: 2048 0 2143 2047
-    ewidth: 20144
-    eheight: 2050
+    ewidth: 512 #+ biassec
+    eheight: 512
 }
 Amp: {
     ptype: "topright"
     datasec: 0 0 2047 2047
     biassec: 2048 0 2143 2047
-    ewidth: 20144
-    eheight: 2050
+    ewidth: 512
+    eheight: 512
 }
 Amp: {
     ptype: "bottomleft"
     datasec: 0 0 2047 2047
     biassec: 2048 0 2143 2047
-    ewidth: 20144
-    eheight: 2050
+    ewidth: 512
+    eheight: 512
 }
 Amp: {
     ptype: "bottomright"
     datasec: 0 0 2047 2047
     biassec: 2048 0 2143 2047
-    ewidth: 20144
-    eheight: 2050
+    ewidth: 512
+    eheight: 512
 }
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -117,13 +116,13 @@ Electronic: {
             name: "Hawaii HgCdTe"
             serial: 0
             Amp: {
-                index: 0 0
+                index: 0 1
                 gain: 5.271
                 readNoise: 2.117
                 saturationLevel: 10000 #the level at which non-linearity becomes significant
             }
             Amp: {
-                index: 0 0
+                index: 1 1
                 gain: 5.271
                 readNoise: 2.092
                 saturationLevel: 10000 #the level at which non-linearity becomes significant
@@ -135,7 +134,7 @@ Electronic: {
                 saturationLevel: 10000 #the level at which non-linearity becomes significant
             }
             Amp: {
-                index: 0 0
+                index: 1 0
                 gain: 5.271
                 readNoise: 2.113
                 saturationLevel: 10000 #the level at which non-linearity becomes significant
