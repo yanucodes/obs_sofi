@@ -1,0 +1,8 @@
+#<?cfg paf policy ?>
+#
+description: "The SOFI Filters from http://www.eso.org/sci/facilities/lasilla/instruments/sofi/inst/Imaging.html"
+
+Filter: {
+    name: "Ks"
+    lambdaEff: 2162 # in nm
+}
