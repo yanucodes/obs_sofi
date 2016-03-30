@@ -12,7 +12,7 @@ Camera: {
         serial: -1
         name: "SOFI"
         index: 0 0
-        offset: 0. 0.
+        offset: 0.0 0.0
     }
 }
 
@@ -22,14 +22,12 @@ Raft: {
     nRow: 1
     Ccd: {
         name: "Hawaii HgCdTe"
-        serial: 0
+        serial: -1
         index: 0 0 
-        offset: 0. 0.
+        offset: 0.0 0.0
     }
 }
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-#not sure about diskCoordSys, amp, sensor or camera (sensor and camera coordinates should be the same in case of SOFI)
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 Ccd: {
@@ -38,7 +36,7 @@ Ccd: {
     nCol: 2
     nRow: 2
     Amp: {
-        serial: 0
+        serial: 4
         ptype: "topleft"
         flipLR: false
         nQuarter: 0
@@ -47,7 +45,7 @@ Ccd: {
         index: 0 1
     }
     Amp: {
-        serial: 0
+        serial: 3
         ptype: "topright"
         flipLR: false
         nQuarter: 0
@@ -56,7 +54,7 @@ Ccd: {
         index: 1 1
     }
     Amp: {
-        serial: 0
+        serial: 2
         ptype: "bottomleft"
         flipLR: false
         nQuarter: 0
@@ -65,7 +63,7 @@ Ccd: {
         index: 0 0
     }
     Amp: {
-        serial: 0
+        serial: 1
         ptype: "bottomright"
         flipLR: false
         nQuarter: 0
@@ -110,7 +108,7 @@ Amp: {
 Electronic: {
     Raft: {
         name: "SOFI"
-        serial:0
+        serial:-1
 
         Ccd: {
             ptype: "default"
