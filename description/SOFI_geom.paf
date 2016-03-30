@@ -1,0 +1,145 @@
+#<?cfg paf policy ?>
+#
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Camera: {
+    name: "SOFI"
+    serial: 1
+    nCol: 1
+    nRow: 1
+    Raft: {
+        serial: -1
+        name: "SOFI"
+        index: 0 0
+        offset: 0. 0.
+    }
+    Distortion: {
+        # No idea yet
+    }
+}
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Raft: {
+    nCol: 1
+    nRow: 1
+    Ccd: {
+        name: "Hawaii HgCdTe"
+        serial: 0
+        index: 0 0 
+        offset: 0. 0.
+    }
+}
+#index - location of ccd in raft
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+#right now the indexes are chosen so that bottom left quadrant is 0,0 but the question is whether it is right
+Ccd: {
+    ptype: "default"
+    pixelSize: 18.5 # in microns
+    nCol: 2
+    nRow: 2
+    Amp: {
+        serial: 0
+        ptype: "topleft"
+        flipLR: false
+        nQuarter: 0
+        hdu: 0
+        diskCoordSys: "camera" 
+        index: 0 1
+    }
+    Amp: {
+        serial: 0
+        ptype: "topright"
+        flipLR: false
+        nQuarter: 0
+        hdu: 0
+        diskCoordSys: "camera"
+        index: 1 1
+    }
+    Amp: {
+        serial: 0
+        ptype: "bottomleft"
+        flipLR: false
+        nQuarter: 0
+        hdu: 0
+        diskCoordSys: "camera"
+        index: 0 0
+    }
+    Amp: {
+        serial: 0
+        ptype: "bottomright"
+        flipLR: false
+        nQuarter: 0
+        hdu: 0
+        diskCoordSys: "camera"
+        index: 1 0
+    }
+}
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Amp: {
+    ptype: "topleft"
+    datasec: 0 0 2047 2047
+    biassec: 2048 0 2143 2047
+    ewidth: 20144
+    eheight: 2050
+}
+Amp: {
+    ptype: "topright"
+    datasec: 0 0 2047 2047
+    biassec: 2048 0 2143 2047
+    ewidth: 20144
+    eheight: 2050
+}
+Amp: {
+    ptype: "bottomleft"
+    datasec: 0 0 2047 2047
+    biassec: 2048 0 2143 2047
+    ewidth: 20144
+    eheight: 2050
+}
+Amp: {
+    ptype: "bottomright"
+    datasec: 0 0 2047 2047
+    biassec: 2048 0 2143 2047
+    ewidth: 20144
+    eheight: 2050
+}
+
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Electronic: {
+    Raft: {
+        name: "SOFI"
+        serial:0
+
+        Ccd: {
+            ptype: "default"
+            name: "Hawaii HgCdTe"
+            serial: 0
+            Amp: {
+                index: 0 0
+                gain: 5.271
+                readNoise: 2.117
+                saturationLevel: 10000 #the level at which non-linearity becomes significant
+            }
+            Amp: {
+                index: 0 0
+                gain: 5.271
+                readNoise: 2.092
+                saturationLevel: 10000 #the level at which non-linearity becomes significant
+            }
+            Amp: {
+                index: 0 0
+                gain: 5.271
+                readNoise: 2.239
+                saturationLevel: 10000 #the level at which non-linearity becomes significant
+            }
+            Amp: {
+                index: 0 0
+                gain: 5.271
+                readNoise: 2.113
+                saturationLevel: 10000 #the level at which non-linearity becomes significant
+            }
+        }
+    }
+}
