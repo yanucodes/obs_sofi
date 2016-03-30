@@ -1,6 +1,8 @@
 #<?cfg paf policy ?>
 #
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+still not sure about serial numbers
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Camera: {
     name: "SOFI"
     serial: 1
@@ -11,9 +13,6 @@ Camera: {
         name: "SOFI"
         index: 0 0
         offset: 0. 0.
-    }
-    Distortion: {
-        # No idea yet
     }
 }
 
@@ -31,6 +30,8 @@ Raft: {
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 #not sure about diskCoordSys, amp, sensor or camera (sensor and camera coordinates should be the same in case of SOFI)
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 Ccd: {
     ptype: "default"
     pixelSize: 18.5 # in microns
@@ -78,29 +79,29 @@ Ccd: {
 
 Amp: {
     ptype: "topleft"
-    datasec: 0 0 2047 2047
-    biassec: 2048 0 2143 2047
+    datasec: 0 0 512 512
+    biassec: 0 0 0 0
     ewidth: 512 #+ biassec
     eheight: 512
 }
 Amp: {
     ptype: "topright"
-    datasec: 0 0 2047 2047
-    biassec: 2048 0 2143 2047
+    datasec: 0 0 512 512
+    biassec: 0 0 0 0
     ewidth: 512
     eheight: 512
 }
 Amp: {
     ptype: "bottomleft"
-    datasec: 0 0 2047 2047
-    biassec: 2048 0 2143 2047
+    datasec: 0 0 512 512
+    biassec: 0 0 0 0
     ewidth: 512
     eheight: 512
 }
 Amp: {
     ptype: "bottomright"
-    datasec: 0 0 2047 2047
-    biassec: 2048 0 2143 2047
+    datasec: 0 0 512 512
+    biassec: 0 0 0 0
     ewidth: 512
     eheight: 512
 }
