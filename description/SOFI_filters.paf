@@ -3,6 +3,14 @@
 description: "The SOFI Filters from http://www.eso.org/sci/facilities/lasilla/instruments/sofi/inst/Imaging.html"
 
 Filter: {
+    name: "J"
+    lambdaEff: 1247 # in nm
+}
+Filter: {
+    name: "H"
+    lambdaEff: 1653 # in nm
+}
+Filter: {
     name: "Ks"
     lambdaEff: 2162 # in nm
 }
