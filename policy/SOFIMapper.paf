@@ -1,0 +1,171 @@
+#<?cfg paf policy ?>
+
+needCalibRegistry: false
+
+camera:        "../description/camera/SOFI_geom.paf"
+#registryPath: "add path to the image registry"
+
+defaultLevel: "Ccd"
+
+exposures: {
+    raw: {
+    template:    "FIELDS/%(pointing)s_%(day)02d%(months)s/%(field)s_%(pointing)s_%(exptime)d_%(number)03d.fits.gz"
+        python:       "lsst.afw.image.DecoratedImageU"
+        persistable:  "DecoratedImageU"
+        storage:      "FitsStorage"
+        level:        "Ccd"
+        tables:       "raw"
+        columns:      "expnum"
+    }
+    postISRCCD: {
+        template:    "?"
+        python:       "lsst.afw.image.expnumF"
+        persistable:  "expnumF"
+        storage:      "FitsStorage"
+        level:        "Ccd"
+        tables:       "raw"
+        columns:      "expnum"
+    }
+    calexp: {
+        template:      "?"
+        python:        "lsst.afw.image.expnumF"
+        persistable:   "expnumF"
+        storage:       "FitsStorage"
+        level:         "Ccd"
+        tables:        "raw"
+        columns:       "expnum"
+    }
+    flatOut: {
+        template:    "FLAT/FLAT_%(day)02d%(months)s_%(number)03d.fits.gz"
+        python:        "lsst.afw.image.expnumF"
+        persistable:        "expnumF"
+        storage:    "FitsStorage"
+        level:        "Ccd"
+        tables:       "raw"
+        columns:      "expnum"
+    }
+    coaddTempExp: {
+        template:    "coaddTempExp/%(day)02d%(months)s/coadd_%(expnum)d.fits"
+        python:      "lsst.afw.image.expnumF"
+        persistable: "expnumF"
+        storage:     "FitsStorage"
+        tables:       "raw"
+        columns:      "expnum"
+    }
+}
+
+calibrations: {
+    flat: {
+        template:    "FIELDS/%(pointing)s_%(day)02d%(months)s/flat.%(field)s_%(pointing)s_10_21-52.fits.gz"
+        python:        "lsst.afw.image.expnumF"
+        persistable:    "expnumF"
+        storage:        "FitsStorage"
+        level:        "Ccd"
+        reference:    "raw"
+        tables:       "flat"
+    }
+    dark: {
+        template:    "DARK_%(exptime)f.fits.gz"
+        python:        "lsst.afw.image.expnumF"
+        persistable:    "expnumF"
+        storage:        "FitsStorage"
+        level:        "Ccd"
+        reference:    "raw"
+        tables:       "flat"
+}
+
+datasets: {
+    ccdExpnosureId: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a tuple
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    ccdexpnumId_bits: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a tuple
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    goodSeeingCoaddId: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a Long
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    goodSeeingCoaddId_bits: {
+        template:     "ignored"
+        # Provide something to import, although we actually return an int
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    deepCoaddId: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a Long
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    deepCoaddId_bits: {
+        template:     "ignored"
+        # Provide something to import, although we actually return an int
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    chiSquaredCoaddId: {
+        template:     "ignored"
+        # Provide something to import, although we actually return a Long
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+    chiSquaredCoaddId_bits: {
+        template:     "ignored"
+        # Provide something to import, although we actually return an int
+        python:       "lsst.daf.base.PropertySet"
+        persistable:  "ignored"
+        storage:      "ignored"
+        tables:       "raw"
+    }
+
+    icSrc: {
+        template:      "work/%(date)d/ICSRC-%(expnum)d_%(filter)s.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "SourceCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    icMatch: {
+        template:      "work/%(date)d/ICMATCH_%(expnum)d_%(filter)s.fits"
+        python:        "lsst.afw.table.BaseCatalog"
+        persistable:        "BaseCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+        tables:        raw_skyTile
+    }
+    log: {
+        template:      "logs/%(date)s/run.log"
+        python:        "str"
+        persistable:   "None"
+        storage:       "TextStorage"
+    }
+    logDir: {
+        template:      "logs/%(date)s/"
+        python:        "str"
+        persistable:   "None"
+        storage:       "None"
+    }
+}
