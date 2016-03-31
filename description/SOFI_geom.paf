@@ -77,7 +77,7 @@ Amp: {
     ptype: "topleft"
     datasec: 0 0 512 512
     biassec: 0 0 0 0
-    ewidth: 512 #+ biassec
+    ewidth: 512
     eheight: 512
 }
 Amp: {
