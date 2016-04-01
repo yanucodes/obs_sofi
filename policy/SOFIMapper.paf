@@ -9,7 +9,7 @@ defaultLevel: "Ccd"
 
 exposures: {
     raw: {
-    template:    "FIELDS/%(pointing)s_%(day)02d%(months)s/%(field)s_%(pointing)s_%(exptime)d_%(number)03d.fits.gz"
+    template:    "FIELDS/%(pointing)s_%(dateObs)s/F02_%(pointing)s_%(exptime)d_%(number)03d.fits.gz"
         python:       "lsst.afw.image.DecoratedImageU"
         persistable:  "DecoratedImageU"
         storage:      "FitsStorage"
@@ -19,8 +19,8 @@ exposures: {
     }
     postISRCCD: {
         template:    "?"
-        python:       "lsst.afw.image.expnumF"
-        persistable:  "expnumF"
+        python:       "lsst.afw.image.exposureF"
+        persistable:  "exposureF"
         storage:      "FitsStorage"
         level:        "Ccd"
         tables:       "raw"
@@ -28,26 +28,26 @@ exposures: {
     }
     calexp: {
         template:      "?"
-        python:        "lsst.afw.image.expnumF"
-        persistable:   "expnumF"
+        python:        "lsst.afw.image.exposureF"
+        persistable:   "exposureF"
         storage:       "FitsStorage"
         level:         "Ccd"
         tables:        "raw"
         columns:       "expnum"
     }
     flatOut: {
-        template:    "FLAT/FLAT_%(day)02d%(months)s_%(number)03d.fits.gz"
-        python:        "lsst.afw.image.expnumF"
-        persistable:        "expnumF"
+        template:    "FLAT/FLAT_%(dateObs)s_%(number)03d.fits.gz"
+        python:        "lsst.afw.image.exposureF"
+        persistable:    "exposureF"
         storage:    "FitsStorage"
         level:        "Ccd"
         tables:       "raw"
         columns:      "expnum"
     }
     coaddTempExp: {
-        template:    "coaddTempExp/%(day)02d%(months)s/coadd_%(expnum)d.fits"
-        python:      "lsst.afw.image.expnumF"
-        persistable: "expnumF"
+        template:    "coaddTempExp/%(dateObs)s/coadd_%(expnum)d.fits"
+        python:      "lsst.afw.image.exposureF"
+        persistable: "exposureF"
         storage:     "FitsStorage"
         tables:       "raw"
         columns:      "expnum"
@@ -56,9 +56,9 @@ exposures: {
 
 calibrations: {
     flat: {
-        template:    "FIELDS/%(pointing)s_%(day)02d%(months)s/flat.%(field)s_%(pointing)s_10_21-52.fits.gz"
-        python:        "lsst.afw.image.expnumF"
-        persistable:    "expnumF"
+        template:    "FLAT/FLAT_%(dateObs).fits.gz"
+        python:        "lsst.afw.image.DecoratedImageU"
+        persistable:    "DecoratedImageU"
         storage:        "FitsStorage"
         level:        "Ccd"
         reference:    "raw"
@@ -66,12 +66,12 @@ calibrations: {
     }
     dark: {
         template:    "DARK_%(exptime)f.fits.gz"
-        python:        "lsst.afw.image.expnumF"
-        persistable:    "expnumF"
+        python:        "lsst.afw.image.DecoratedImageU"
+        persistable:    "DecoratedImageU"
         storage:        "FitsStorage"
         level:        "Ccd"
         reference:    "raw"
-        tables:       "flat"
+        tables:       "dark"
 }
 
 datasets: {
