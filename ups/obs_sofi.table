@@ -1,0 +1,10 @@
+setupRequired(afw)
+setupRequired(daf_base)
+setupRequired(daf_butlerUtils)
+setupRequired(pex_config)
+setupRequired(pex_policy)
+setupRequired(numpy)
+setupRequired(skypix)
+setupRequired(utils)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
