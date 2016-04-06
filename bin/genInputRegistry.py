@@ -55,7 +55,10 @@ if makeTables:
     conn.commit()
 
 for fits in files:
-    matches = re.search(r'SOFI.(\d{4})-(\d{2})-(\d{2})T(\d{2})/(\d{2})/(\d{2}).(\d{3}).fits', fits)
+    matches = re.search(r'(\s{3})/(\d{2})\(s{3})/(\s+)_d{3}.fits.gz', fits)
+    #File names examples: Fields: FLD/05Feb/F02_S22_10_021.fits.gz
+    #Flats: FLT/06Feb/FLAT_06Feb_005.fits.gz
+    #Standards: STD/05Feb/STD_9104_053.fits.gz
     if not matches:
         print >>sys.stderr, "Warning: skipping unrecognized filename:", fits
         continue
@@ -69,11 +72,11 @@ for fits in files:
     ra = h.get('RA').strip()
     dec= h.get('DEC').strip()
     filename = h.get('ARCFILE')
-    type = h.get('OBJECT')
+    objtype = h.get('OBJECT')
     
     try:
         conn.execute("INSERT INTO raw VALUES (NULL, ?, ?, ?, ?, ?)",
-                     (mjd, ra, dec, filename, type))
+                     (mjd, ra, dec, filename, objtype))
     
     except Exception, e:
         print "skipping botched %s: %s" % (fits, e)
