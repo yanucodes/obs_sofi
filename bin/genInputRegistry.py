@@ -55,7 +55,7 @@ if makeTables:
     conn.commit()
 
 for fits in files:
-    matches = re.search(r'(FIELDS|FLAT|STANDARD)/(\w{5})/((\w{3}_\w{3}_\d{2})|(FLAT_\w{5})|(STD_\d{4}_\w{3}))_d{3}.fits.gz', fits)
+    matches = re.search(r'(FIELDS|FLAT|STANDARD)/(\w{3}_\w{5})/((\w{3}_\w{3}_\d{2})|(FLAT_\w{5})|(STD_\d{4}_\w{3}))_d{3}.fits.gz', fits)
     #File names examples: FIELDS: Fields/05Feb/F02_S22_10_021.fits.gz
     #Flats: FLAT/06Feb/FLAT_06Feb_005.fits.gz
     #Standards: STANDARD/05Feb/STD_9104_05feb_053.fits.gz
