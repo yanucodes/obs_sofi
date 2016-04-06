@@ -1,9 +1,10 @@
 #<?cfg paf policy ?>
 
-needCalibRegistry: false
+needCalibRegistry: true
 
 camera:        "../description/camera/SOFI_geom.paf"
-#registryPath: "add path to the image registry"
+registryPath: "../input/inputregistry.sqlite3"
+calibRegistryPath: "../input/calibregistry.sqlite3"
 
 defaultLevel: "Ccd"
 
@@ -15,25 +16,22 @@ exposures: {
         storage:      "FitsStorage"
         level:        "Ccd"
         tables:       "raw"
-        columns:      "expnum"
     }
     postISRCCD: {
-        template:    "?"
+        template:    "postISRCCD/%(pointing)s_%(dateObs)s/F02_%(pointing)s_%(exptime)d_%(number)03d.fits.gz"
         python:       "lsst.afw.image.exposureF"
         persistable:  "exposureF"
         storage:      "FitsStorage"
         level:        "Ccd"
         tables:       "raw"
-        columns:      "expnum"
     }
     calexp: {
-        template:      "?"
+        template:      "calexp/%(pointing)s_%(dateObs)s/F02_%(pointing)s_%(exptime)d_%(number)03d.fits.gz"
         python:        "lsst.afw.image.exposureF"
         persistable:   "exposureF"
         storage:       "FitsStorage"
         level:         "Ccd"
         tables:        "raw"
-        columns:       "expnum"
     }
     flatOut: {
         template:    "FLAT/FLAT_%(dateObs)s_%(number)03d.fits.gz"
@@ -45,24 +43,22 @@ exposures: {
         columns:      "expnum"
     }
     coaddTempExp: {
-        template:    "coaddTempExp/%(dateObs)s/coadd_%(expnum)d.fits"
+        template:    "coaddTempExp/coadd_%(pointing)s.fits"
         python:      "lsst.afw.image.exposureF"
         persistable: "exposureF"
         storage:     "FitsStorage"
         tables:       "raw"
-        columns:      "expnum"
     }
 }
 
 calibrations: {
     flat: {
-        template:    "FLAT/FLAT_%(dateObs).fits.gz"
+        template:    "FLAT/FLAT%(dateObs).fits.gz"
         python:        "lsst.afw.image.DecoratedImageU"
         persistable:    "DecoratedImageU"
         storage:        "FitsStorage"
         level:        "Ccd"
-        reference:    "raw"
-        tables:       "flat"
+        tables:       "calib"
     }
     dark: {
         template:    "DARK_%(exptime)f.fits.gz"
@@ -70,8 +66,7 @@ calibrations: {
         persistable:    "DecoratedImageU"
         storage:        "FitsStorage"
         level:        "Ccd"
-        reference:    "raw"
-        tables:       "dark"
+        tables:       "calib"
 }
 
 datasets: {
