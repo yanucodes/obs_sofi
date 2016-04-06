@@ -39,10 +39,10 @@ parser.add_argument("--root", default=".", help="Root directory")
 args = parser.parse_args()
 
 root = args.root
-files = glob.glob(os.path.join(root, "*.fits"))
+files = glob.glob(os.path.join(root, "*.fits.gz"))
 sys.stderr.write('processing %d files...\n' % (len(files)))
 
-registryName = "registry.sqlite3"
+registryName = "inputregistry.sqlite3"
 if os.path.exists(registryName) and args.create:
     os.unlink(registryName)
 
@@ -50,15 +50,15 @@ makeTables = not os.path.exists(registryName)
 conn = sqlite.connect(registryName)
 if makeTables:
     cmd = "create table raw (id integer primary key autoincrement"
-    cmd += ", mjd float, ra text, dec text, filename text, type text"
+    cmd += ", mjd float, ra text, dec text, filename text, objtype text)"
     conn.execute(cmd)
     conn.commit()
 
 for fits in files:
-    matches = re.search(r'(\s{3})/(\d{2})\(s{3})/(\s+)_d{3}.fits.gz', fits)
-    #File names examples: Fields: FLD/05Feb/F02_S22_10_021.fits.gz
-    #Flats: FLT/06Feb/FLAT_06Feb_005.fits.gz
-    #Standards: STD/05Feb/STD_9104_053.fits.gz
+    matches = re.search(r'(FIELDS|FLAT|STANDARD)/(\w{5})/((\w{3}_\w{3}_\d{2})|(FLAT_\w{5})|(STD_\d{4}_\w{3}))_d{3}.fits.gz', fits)
+    #File names examples: FIELDS: Fields/05Feb/F02_S22_10_021.fits.gz
+    #Flats: FLAT/06Feb/FLAT_06Feb_005.fits.gz
+    #Standards: STANDARD/05Feb/STD_9104_05feb_053.fits.gz
     if not matches:
         print >>sys.stderr, "Warning: skipping unrecognized filename:", fits
         continue
