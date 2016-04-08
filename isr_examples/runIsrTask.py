@@ -21,9 +21,9 @@ def runIsr():
     isrConfig.assembleCcd.setGain = False
     isrTask = IsrTask(config=isrConfig)
     
-    darkExposure = afwImage.ImageF(os.path.join(inputdir, "DARK_10.fits.gz"))
-    flatExposure = afwImage.ImageF(os.path.join(inputdir,"Flat06Feb.fits.gz"))
-    rawExposure = afwImage.ImageF(os.path.join(inputdir,"F02_S22_10_032.fits.gz"))
+    darkExposure = afwImage.ExposureF(os.path.join(inputdir, "DARK_10.fits.gz"))
+    flatExposure = afwImage.ExposureF(os.path.join(inputdir,"Flat06Feb.fits.gz"))
+    rawExposure = afwImage.ExposureF(os.path.join(inputdir,"F02_S22_10_032.fits.gz"))
     det = exampleUtils.createDetector(2, 2, 512, 512, 0, 0, 0, 0, False)
     rawExposure.setDetector(det)
     
