@@ -39,15 +39,14 @@ parser.add_argument("--root", default=".", help="Root directory")
 args = parser.parse_args()
 
 root = args.root
-files = glob.glob(os.path.join(root, "*.fits.gz"))
-sys.stderr.write('processing %d files...\n' % (len(files)))
+files = glob.iglob(os.path.join(root, "*","*.fits.gz"))
 
 registryName = "calibregistry.sqlite3"
 if os.path.exists(registryName) and args.create:
     os.unlink(registryName)
 
 makeTables = not os.path.exists(registryName)
-conn = sqlite.connect(registryName)
+conn = sqlite3.connect(registryName)
 if makeTables:
     cmd = "create table calib (id integer primary key autoincrement"
     cmd += ", mjd float, filename text, calibtype text)"
@@ -55,7 +54,7 @@ if makeTables:
     conn.commit()
 
 for fits in files:
-    matches = re.search(r'calib/(DARK|FLAT)(\w{5}|\d{2}|\d{1}\.d{1}).fits.gz', fits)
+    matches = re.search(r'CALIB/(DARK|FLAT)((\w{5})|(\d{2})|((\d{1}).(\d{1}))).fits.gz', fits)
     if not matches:
         print >>sys.stderr, "Warning: skipping unrecognized filename:", fits
         continue
