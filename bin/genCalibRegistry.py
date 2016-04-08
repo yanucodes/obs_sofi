@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
-# 
+#
 # LSST Data Management System
 # Copyright 2008, 2009, 2010, 2011, 2012, 2013 LSST Corporation.
-# 
+#
 # This product includes software developed by the
 # LSST Project (http://www.lsst.org/).
 #
@@ -10,14 +10,14 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
-# You should have received a copy of the LSST License Statement and 
-# the GNU General Public License along with this program.  If not, 
+#
+# You should have received a copy of the LSST License Statement and
+# the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 import argparse
@@ -39,15 +39,14 @@ parser.add_argument("--root", default=".", help="Root directory")
 args = parser.parse_args()
 
 root = args.root
-files = glob.glob(os.path.join(root, "*.fits.gz"))
-sys.stderr.write('processing %d files...\n' % (len(files)))
+files = glob.iglob(os.path.join(root, "*","*.fits.gz"))
 
 registryName = "calibregistry.sqlite3"
 if os.path.exists(registryName) and args.create:
     os.unlink(registryName)
 
 makeTables = not os.path.exists(registryName)
-conn = sqlite.connect(registryName)
+conn = sqlite3.connect(registryName)
 if makeTables:
     cmd = "create table calib (id integer primary key autoincrement"
     cmd += ", mjd float, filename text, calibtype text)"
@@ -55,11 +54,11 @@ if makeTables:
     conn.commit()
 
 for fits in files:
-    matches = re.search(r'calib/(DARK|FLAT)(\w{5}|\d{2}|\d{1}\.d{1}).fits.gz', fits)
+    matches = re.search(r'CALIB/(DARK|FLAT)_((\w{5})|(\d{2})|((\d{1}).(\d{1}))).fits.gz', fits)
     if not matches:
         print >>sys.stderr, "Warning: skipping unrecognized filename:", fits
         continue
-
+    
     sys.stderr.write("Processing %s\n" % (fits))
     
     # Extract information from header
@@ -70,10 +69,10 @@ for fits in files:
     objtype = h.get('OBJECT')
     
     try:
-        conn.execute("INSERT INTO raw VALUES (NULL, ?, ?, ?)",
+        conn.execute("INSERT INTO calib VALUES (NULL, ?, ?, ?)",
                      (mjd, filename, objtype))
     
-    except Exception, e:
+    except Exception as e:
         print "skipping botched %s: %s" % (fits, e)
         continue
 
