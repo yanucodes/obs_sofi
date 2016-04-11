@@ -4,6 +4,7 @@ import numpy
 
 from lsst.afw.cameraGeom import makeCameraFromCatalogs, CameraConfig, DetectorConfig,\
     SCIENCE, PIXELS, PUPIL, FOCAL_PLANE
+from lsst.afw.cameraGeom.cameraFactory import makeDetector
 import lsst.afw.cameraGeom.utils as cameraGeomUtils
 import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
@@ -184,6 +185,7 @@ def makeCamera(name="SOFI"):
     tmc.nativeSys = FOCAL_PLANE.getSysName()
     tmc.transforms = {PUPIL.getSysName():tConfig}
     camConfig.transformDict = tmc
+    fpTransform = afwGeom.xyTransformRegistry['identity']()
     
     ccdId = 0
     ampInfoCatDict = {}
@@ -192,7 +194,7 @@ def makeCamera(name="SOFI"):
     ampInfoCatDict[detName] = det['ampInfo']
     camConfig.detectorList[ccdId] = det['ccdConfig']
 
-    return makeCameraFromCatalogs(camConfig, ampInfoCatDict)
+    return {'camera':makeCameraFromCatalogs(camConfig, ampInfoCatDict),'detector': makeDetector(det['ccdConfig'], det['ampInfo'], fpTransform, camConfig.plateScale)}
 
 
 #
