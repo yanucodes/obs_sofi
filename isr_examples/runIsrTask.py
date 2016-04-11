@@ -1,7 +1,7 @@
 import os
 from lsst.ip.isr import IsrTask
 import lsst.afw.display.ds9 as ds9
-import exampleUtils
+from lsst.obs.sofi.makeCamera import makeCamera
 import sys, numpy
 import lsst.afw.image as afwImage
 from lsst.afw.cameraGeom.fitsUtils import getByKey, setByKey, HeaderAmpMap, HeaderDetectorMap, DetectorBuilder
@@ -24,7 +24,7 @@ def runIsr():
     darkExposure = afwImage.ExposureF(os.path.join(inputdir, "DARK_10.fits.gz"))
     flatExposure = afwImage.ExposureF(os.path.join(inputdir,"Flat06Feb.fits.gz"))
     rawExposure = afwImage.ExposureF(os.path.join(inputdir,"F02_S22_10_032.fits.gz"))
-    det = exampleUtils.createDetector(2, 2, 512, 512, 0, 0, 0, 0, False)
+    camera, det = makeCamera()
     rawExposure.setDetector(det)
     
     output = isrTask.run(rawExposure, dark=darkExposure, flat=flatExposure)
