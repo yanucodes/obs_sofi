@@ -67,7 +67,7 @@ def populateAmpBoxes(nx, ny, nprescan, nhoverscan, nvoverscan, nextended, ix, iy
     allBox.include(hOscanBox)
     allBox.include(vOscanBox)
 
-    bbox.shift(afwGeom.ExtentI(ix*nx, iy*ny))
+    bbox.shift(afwGeom.ExtentI(ix*512, iy*512))
     xtot = allBox.getDimensions().getX()
     ytot = allBox.getDimensions().getY()
     rShiftExt = afwGeom.ExtentI(ix*xtot, iy*ytot)
@@ -130,11 +130,16 @@ def createDetector(nAmpX, nAmpY, nPixX, nPixY, pre, hOscan, vOscan, ext, isPerAm
     
     schema = afwTable.AmpInfoTable.makeMinimalSchema()
     ampCatalog = afwTable.AmpInfoCatalog(schema)
-    for iy in range(nAmpY):
-        for ix in range(nAmpX):
-            record = ampCatalog.addNew()
-            populateAmpBoxes(nPixX, nPixY, pre, hOscan, vOscan, ext, ix, iy,
+    iy = 0
+    for ix in range(nAmpX):
+        record = ampCatalog.addNew()
+        populateAmpBoxes(nPixX, nPixY, pre, hOscan, 0, ext, ix, iy,
                               isPerAmp, record)
+    iy = 1
+    for ix in range(nAmpX):
+        record = ampCatalog.addNew()
+        populateAmpBoxes(nPixX, nPixY-vOscan, pre, hOscan, vOscan, ext, ix, iy,
+                         isPerAmp, record)
 
     detConfig = DetectorConfig()
     detConfig.name = 'HawaiiHgCdTe'
@@ -157,7 +162,11 @@ def createDetector(nAmpX, nAmpY, nPixX, nPixY, pre, hOscan, vOscan, ext, isPerAm
     detConfig.transposeDetector = False
     detConfig.transformDict.nativeSys = PIXELS.getSysName()
     
-    return {'ccdConfig':detConfig, 'ampInfo':ampCatalog}
+    fpTransform = afwGeom.xyTransformRegistry['identity']()
+    plateScale = 0.288/0.0185 # arcsec/mm
+    det = makeDetector(detConfig, ampCatalog, fpTransform, plateScale)
+    
+    return {'ccdConfig':detConfig, 'ampInfo':ampCatalog, 'detector': det}
 
 #
 # Make a Camera
@@ -185,16 +194,16 @@ def makeCamera(name="SOFI"):
     tmc.nativeSys = FOCAL_PLANE.getSysName()
     tmc.transforms = {PUPIL.getSysName():tConfig}
     camConfig.transformDict = tmc
-    fpTransform = afwGeom.xyTransformRegistry['identity']()
+    
     
     ccdId = 0
     ampInfoCatDict = {}
     detName = "HawaiiHgCdTe"
-    det = createDetector(2, 2, 512, 512, 0, 0, 0, 0, False)
+    det = createDetector(2, 2, 512, 512, 0, 0, 12, 0, False)
     ampInfoCatDict[detName] = det['ampInfo']
     camConfig.detectorList[ccdId] = det['ccdConfig']
 
-    return {'camera':makeCameraFromCatalogs(camConfig, ampInfoCatDict),'detector': makeDetector(det['ccdConfig'], det['ampInfo'], fpTransform, camConfig.plateScale)}
+    return makeCameraFromCatalogs(camConfig, ampInfoCatDict)
 
 
 #
