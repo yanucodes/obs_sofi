@@ -1,33 +1,29 @@
 import os
-from lsst.ip.isr import IsrTask
-import lsst.afw.display.ds9 as ds9
-from lsst.obs.sofi.makeCamera import makeCamera
-import sys, numpy
 import lsst.afw.image as afwImage
-from lsst.afw.cameraGeom.fitsUtils import getByKey, setByKey, HeaderAmpMap, HeaderDetectorMap, DetectorBuilder
 
 def runIsr():
     '''Run the task to do ISR on a ccd'''
-    
+    from lsst.obs.sofi.runIsrTask import SofiIsrTask
     
     #Create the isr task with modified config
-    isrConfig = IsrTask.ConfigClass()
-    isrConfig.doBias = False #We didn't make a zero frame
+    isrConfig = SofiIsrTask.ConfigClass()
+    isrConfig.doBias = False
+    isrConfig.doOverscan = True
+    isrConfig.overscanFitType = 'POLY'
     isrConfig.doDark = True
     isrConfig.doFlat = True
-    isrConfig.doFringe = False #There is no fringe frame for this example
-    
+    isrConfig.doAssembleCcd = False
+    isrConfig.doFringe = False
     isrConfig.assembleCcd.doRenorm = False #We'll take care of gain in the flats
     isrConfig.assembleCcd.setGain = False
-    isrTask = IsrTask(config=isrConfig)
+    SofiIsrTask = SofiIsrTask(config = isrConfig)
     
     darkExposure = afwImage.ExposureF(os.path.join(inputdir, "DARK_10.fits.gz"))
     flatExposure = afwImage.ExposureF(os.path.join(inputdir,"Flat06Feb.fits.gz"))
-    rawExposure = afwImage.ExposureF(os.path.join(inputdir,"F02_S22_10_032.fits.gz"))
-    camera, det = makeCamera()
-    rawExposure.setDetector(det)
+    rawExposure = afwImage.ExposureF(os.path.join(inputdir,"F02_S22_10_030.fits.gz"))
     
-    output = isrTask.run(rawExposure, dark=darkExposure, flat=flatExposure)
+    output = SofiIsrTask.runIsr(rawExposure, dark=darkExposure, flat=flatExposure)
+    
     return output.exposure
 
 if __name__ == "__main__":
