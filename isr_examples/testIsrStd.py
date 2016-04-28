@@ -2,7 +2,8 @@ import os
 import glob
 import numpy as np
 from astropy.io import fits
-from scipy.stats import sigmaclip
+from astropy.stats import sigma_clip
+from astropy.convolution import convolve, Box1DKernel
 import lsst.utils
 from lsst.daf.butlerUtils import ExposureIdInfo
 from lsst.afw.detection import GaussianPsf
@@ -59,6 +60,7 @@ def createAndSubtractDark():
         #imcombine (need to add sigmaclip)
         #imcombine (input="@lista.tmp",output= "dark_"//ima, combine="average", reject="sigclip", lsigma=5, hsigma=5)
         tempDark = np.mean(imSlice, axis=0)
+        tempDark = sigma_clip(tempDark, sigma=5, iters=5)
 
         #  further compress the image on the x axis...
         #  blkavg (input="dark_"//ima,output = "tmp1", b1 = 34, b2=1, option = "average")
@@ -66,15 +68,24 @@ def createAndSubtractDark():
         tempDark = tempDark.reshape((tempDark.shape[0], -1, 1))
         tempDark = np.mean(tempDark, axis=1)
         
+        # smooth it
+        tempDark = tempDark.reshape(-1)
+        tempDark = convolve(tempDark, Box1DKernel(10))
+        tempDark = tempDark.reshape(1024,1)
+        
         tempDark = np.repeat(tempDark, 1024, axis=1)
         
-        im_mean = np.mean(maskedImage.getImage().getArray())
+        imArray = maskedImage.getImage().getArray()
+        imArray = sigma_clip(imArray, sigma=3, iters=5)
+        im_mean = np.mean(imArray)
         darkArray[k] = tempDark - im_mean
         k = k + 1
     
     darkArr = np.mean(darkArray, axis=0)
+    print darkArr.shape
+    darkArrClipped = np.ma.getdata(sigma_clip(darkArr, sigma=5, iters=5))
         
-    hdu = fits.PrimaryHDU(darkArr)
+    hdu = fits.PrimaryHDU(darkArrClipped)
     hdu.writeto('dark.fits')
     
     darkExposure = afwImage.ExposureF(os.path.join(inputdir, "dark.fits"))
@@ -106,7 +117,7 @@ def runIsr():
     isrConfig.assembleCcd.setGain = False
     SofiIsrTask = SofiIsrTask(config = isrConfig)
     
-    darkExposure = afwImage.ExposureF(os.path.join(inputdir, "DARK_10.fits.gz"))
+    darkExposure = afwImage.ExposureF(os.path.join(inputdir, "DARK_1.2.fits.gz"))
     flatExposure = afwImage.ExposureF(os.path.join(inputdir,"Flat06Feb.fits.gz"))
     
     imlist = glob.glob(os.path.join(inputdir,"STD_9104_05feb_01*.fits"))
