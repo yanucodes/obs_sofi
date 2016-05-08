@@ -5,6 +5,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.pex.logging as pexLogging
 import lsst.afw.display.ds9 as ds9
+import lsst.meas.algorithms as measAlg
 import pylab
 import numpy as num
 from testPsfDetermination import testPsfDeterminer
@@ -19,15 +20,11 @@ pexLogging.Trace_setVerbosity("lsst.ip.diffim", verbosity)
 # r, d1, d2 = crossCorrelation.makeAutoCorrelation(kernelCellSet, spatialKernel, makePlot=True)
 # reload(crossCorrelation)
 
-"""
-    def makeAutoCorrelation():
-    kImage  = afwImage.ExposureF("dd_F02_S22_10_022.fits").getMaskedImage().getImage()
-    ksImage = afwImage.ExposureF("dd_F02_S22_10_023.fits").getMaskedImage().getImage()
-    """
 def makeAutoCorrelation(kernelCellSet, spatialKernel, makePlot = False):
     kImage  = afwImage.ImageD(spatialKernel.getDimensions())
     ksImage = afwImage.ImageD(spatialKernel.getDimensions())
     
+    print "KernelCellSet, spatialKernel"
     print kernelCellSet
     print spatialKernel
     
@@ -173,6 +170,8 @@ def addNoise(mi):
     var += 1.0
 
 def testAutoCorrelation(orderMake, orderFit, inMi = None, display = False):
+    
+    print "configure"
     config = ipDiffim.ImagePsfMatchTask.ConfigClass()
     config.kernel.name = "AL"
     subconfig = config.kernel.active
@@ -181,29 +180,7 @@ def testAutoCorrelation(orderMake, orderFit, inMi = None, display = False):
 
     stride = 100
     
-    """
-    if inMi == None:
-        width  = 512
-        height = 2048
-        inMi = afwImage.MaskedImageF(afwGeom.Extent2I(width, height))
-        for j in num.arange(stride//2, height, stride):
-            j = int(j)
-            for i in num.arange(stride//2, width, stride):
-                i = int(i)
-                inMi.set(i-1, j-1, (100., 0x0, 1.))
-                inMi.set(i-1, j+0, (100., 0x0, 1.))
-                inMi.set(i-1, j+1, (100., 0x0, 1.))
-                inMi.set(i+0, j-1, (100., 0x0, 1.))
-                inMi.set(i+0, j+0, (100., 0x0, 1.))
-                inMi.set(i+0, j+1, (100., 0x0, 1.))
-                inMi.set(i+1, j-1, (100., 0x0, 1.))
-                inMi.set(i+1, j+0, (100., 0x0, 1.))
-                inMi.set(i+1, j+1, (100., 0x0, 1.))
-
-    addNoise(inMi)
-    """
-    
-    inMiExp = afwImage.ExposureF("dd_F02_S22_10_022.fits")
+    inMiExp = afwImage.ExposureF("dd_STD_9104_05feb_015.fits")
     inMi = inMiExp.getMaskedImage()
     
     kSize = subconfig.kernelSize
@@ -224,20 +201,12 @@ def testAutoCorrelation(orderMake, orderFit, inMi = None, display = False):
                [0.01 * x for x in range(1,spatialKernelFunction.getNParameters()+1)]]
     spatialKernel.setSpatialParameters(kCoeffs)
     
-    """
     cMi = afwImage.MaskedImageF(inMi.getDimensions())
     afwMath.convolve(cMi, inMi, spatialKernel, True)
-    """
     
-    cMiExp = afwImage.ExposureF("dd_F02_S22_10_023.fits")
+    
+    cMiExp = afwImage.ExposureF("new.fits")
     cMi = cMiExp.getMaskedImage()
-
-    if display:
-        ds9.mtv(inMi.getImage(), frame=1)
-        #ds9.mtv(inMi.getVariance(), frame=2)
-
-        ds9.mtv(cMi.getImage(), frame=3)
-        #ds9.mtv(cMi.getVariance(), frame=4)
         
     subconfig.spatialKernelOrder = orderFit
     subconfig.sizeCellX = stride
@@ -245,8 +214,15 @@ def testAutoCorrelation(orderMake, orderFit, inMi = None, display = False):
 
     psfmatch = ipDiffim.ImagePsfMatchTask(config=config)
     
-    testPsfDeterminer(inMiExp)
+    print "Creating Gaussian PSF"
+    #testPsfDeterminer(inMiExp)
+    psfConfig = measAlg.GaussianPsfFactory()
+    psfConfig.defaultFwhm = 3.08
+    psf = psfConfig.apply(3.08)
+    inMiExp.setPsf(psf)
+    cMiExp.setPsf(psf)
     
+    print "Creating candidate list"
     CandidateList = psfmatch.makeCandidateList(inMiExp, cMiExp, kSize)
     result = psfmatch.subtractMaskedImages(inMi, cMi, CandidateList)
 
@@ -254,6 +230,8 @@ def testAutoCorrelation(orderMake, orderFit, inMi = None, display = False):
     spatialKernel         = result.psfMatchingKernel
     spatialBg             = result.backgroundModel
     kernelCellSet         = result.kernelCellSet
+    
+    "Make AutoCorrelation"
     makeAutoCorrelation(kernelCellSet, spatialKernel, makePlot = True)
 
 def doOverConstrained(inMi = None, display = False):
