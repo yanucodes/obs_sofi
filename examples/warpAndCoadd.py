@@ -27,6 +27,7 @@ import os
 import sys
 import time
 import traceback
+import numpy as np
 
 import lsst.pex.config as pexConfig
 import lsst.pex.logging as pexLog
@@ -34,6 +35,8 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.coadd.utils as coaddUtils
+
+from correlation import find_offsets
 
 class WarpAndCoaddConfig(pexConfig.Config):
     saveDebugImages = pexConfig.Field(
@@ -91,6 +94,10 @@ def warpAndCoadd(coaddPath, exposureListPath, config):
     expNum = 0
     numExposuresInCoadd = 0
     numExposuresFailed = 0
+    
+    auxMaskedImage = afwImage.makeMaskedImage(afwImage.makeImageFromArray(np.zeros((1224,1224))))
+    aux = afwImage.makeExposure(auxMaskedImage)
+    
     with file(exposureListPath, "rU") as infile:
         for exposurePath in infile:
             exposurePath = exposurePath.strip()
@@ -107,9 +114,12 @@ def warpAndCoadd(coaddPath, exposureListPath, config):
                 
                 if not coadd:
                     print >> sys.stderr, "Create warper and coadd with size and WCS matching the first/reference exposure"
+
+                    exposure.getWcs().shiftReferencePixel(100,100)
+                    
                     warper = afwMath.Warper.fromConfig(config.warp)
                     coadd = coaddUtils.Coadd.fromConfig(
-                        bbox = exposure.getBBox(),
+                        bbox = aux.getBBox(),
                         wcs = exposure.getWcs(),
                         config = config.coadd)
                     print "badPixelMask=", coadd.getBadPixelMask()
@@ -117,6 +127,7 @@ def warpAndCoadd(coaddPath, exposureListPath, config):
                     print >> sys.stderr, "Add reference exposure to coadd (without warping)"
                     coadd.addExposure(exposure)
                 else:
+                    find_offsets(coadd.getCoadd(),exposure)
                     print >> sys.stderr, "Warp exposure"
                     warpedExposure = warper.warpExposure(
                         destWcs = coadd.getWcs(),
@@ -175,9 +186,11 @@ where:
         sys.exit(0)
     
     coaddPath = sys.argv[1]
+    '''
     if os.path.exists(coaddPath):
         print >> sys.stderr, "Coadd file %s already exists" % (coaddPath,)
         sys.exit(1)
+        '''
     
     exposureListPath = sys.argv[2]
 
