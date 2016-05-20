@@ -69,114 +69,58 @@ def psfVal(ix, iy, x, y, sigma1, sigma2, b):
     return (math.exp        (-0.5*((ix - x)**2 + (iy - y)**2)/sigma1**2) +
             b*math.exp        (-0.5*((ix - x)**2 + (iy - y)**2)/sigma2**2))/(1 + b)
 
-def measure(exposure):
-    
-    psf = measAlg.SingleGaussianPsf(11, 11, 2)
-    exposure.setPsf(psf)
-    
-    """Measure a set of Footprints, returning a SourceCatalog"""
+def measure(footprintSet, exposure):
+
     schema = afwTable.SourceTable.makeMinimalSchema()
-    config = SourceDetectionTask.ConfigClass()
-    config.thresholdPolarity = "both"
-    config.background.isNanSafe = True
-    config.thresholdValue = 3.0
-    detectionTask = SourceDetectionTask(config=config, schema=schema)
-    config = BaseMeasurementTask.ConfigClass()
+
+    config = measBase.BaseMeasurementConfig()
+    config.slots.psfFlux = "base_PsfFlux"
+    measureTask = measBase.BaseMeasurementTask(schema, config=config)
+
+    table = afwTable.SourceCatalog(schema)
+    footprintSet.makeSources(table)
+    measureTask.callMeasure(table, exposure)
+
+    return table
+'''
+def measure(footprintSet, exposure):
+
+    schema = afwTable.SourceTable.makeMinimalSchema()
+    config = measBase.SingleFrameMeasurementConfig()
+    config.algorithms.names = ["base_PixelFlags",
+                 "base_SdssCentroid",
+                 "base_GaussianFlux",
+                 "base_SdssShape",
+                 "base_CircularApertureFlux",
+                 "base_PsfFlux",
+                 ]
+    config.algorithms["base_CircularApertureFlux"].radii = [3.0]
+    config.slots.centroid = "base_SdssCentroid"
     config.slots.psfFlux = "base_PsfFlux"
     config.slots.apFlux = "base_CircularApertureFlux_3_0"
-        
-    task = measBase.BaseMeasurementTask(schema, config=config)
+    config.slots.modelFlux = None
+    config.slots.instFlux = None
+    config.slots.calibFlux = None
+    config.slots.shape = "base_SdssShape"
+    measureTask = measBase.SingleFrameMeasurementTask(schema, config=config)
     table = afwTable.SourceCatalog(schema)
-    result = detectionTask.run(table, exposure)
-    
-    sources = result.sources
-    print "Found %d sources (%d +ve, %d -ve)" % (len(sources), result.fpSets.numPos, result.fpSets.numNeg)
-    
-    # Then run the default SFM task.  Results not checked
-    task.callMeasure(sources, exposure)
-    
+    footprintSet.makeSources(table)
+    measureTask.run(table, exposure)
+
     return table
-
-'''
-def setUp(exposure):
-    width, height = 110, 301
-    
-    mi = exposure.getMaskedImage()
-    mi.set(0)
-    sd = 3                          # standard deviation of image
-    mi.getVariance().set(sd*sd)
-    mi.getMask().addMaskPlane("DETECTED")
-
-    FWHM = 5
-    ksize = 31                      # size of desired kernel
-
-    sigma1 = 1.75
-    sigma2 = 2*sigma1
-
-    exposure.setPsf(measAlg.DoubleGaussianPsf(ksize, ksize,
-                                                    1.5*sigma1, 1, 0.1))
-                                                    
-                                                    #set the right detector
-    exposure.setDetector(DetectorWrapper().detector)
-
-
-    #
-    # Make a kernel with the exactly correct basis functions.  Useful for debugging
-    #
-    basisKernelList = afwMath.KernelList()
-    for sigma in (sigma1, sigma2):
-        basisKernel = afwMath.AnalyticKernel(self.ksize, self.ksize,
-                                                 afwMath.GaussianFunction2D(sigma, sigma))
-        basisImage = afwImage.ImageD(basisKernel.getDimensions())
-        basisKernel.computeImage(basisImage, True)
-        basisImage /= numpy.sum(basisImage.getArray())
-
-        if sigma == sigma1:
-            basisImage0 = basisImage
-        else:
-            basisImage -= basisImage0
-
-        basisKernelList.append(afwMath.FixedKernel(basisImage))
-
-    order = 1                                # 1 => up to linear
-    spFunc = afwMath.PolynomialFunction2D(order)
-
-    exactKernel = afwMath.LinearCombinationKernel(basisKernelList, spFunc)
-    exactKernel.setSpatialParameters([[1.0, 0,          0],
-                                          [0.0, 0.5*1e-2, 0.2e-2]])
-    exactPsf = measAlg.PcaPsf(exactKernel)
-
-    rand = afwMath.Random()               # make these tests repeatable by setting seed
-    
-    catalog = measure(exposure)
-
-    for source in catalog:
-        try:
-            cand = measAlg.makePsfCandidate(source, exposure)
-            cellSet.insertCandidate(cand)
-
-        except Exception, e:
-            print e
-            continue
-'''
-
+    '''
 
 def setupDeterminer(exposure, nEigenComponents=3, starSelectorAlg="secondMoment"):
     """Setup the starSelector and psfDeterminer"""
+    schema = afwTable.SourceTable.makeMinimalSchema()
     if starSelectorAlg == "secondMoment":
         starSelectorClass = measAlg.SecondMomentStarSelectorTask
         starSelectorConfig = starSelectorClass.ConfigClass()
-        starSelectorConfig.clumpNSigma = 5.0
-        starSelectorConfig.histSize = 14
-        starSelectorConfig.badFlags = ["base_PixelFlags_flag_edge",
-                                           "base_PixelFlags_flag_interpolatedCenter",
-                                           "base_PixelFlags_flag_saturatedCenter",
-                                           "base_PixelFlags_flag_crCenter",
-                                           ]
+        starSelectorConfig.clumpNSigma = 3.0
+        starSelectorConfig.badFlags = [                                            ]
     elif starSelectorAlg == "objectSize":
         starSelectorClass = measAlg.ObjectSizeStarSelectorTask
         starSelectorConfig = starSelectorClass.ConfigClass()
-        starSelectorConfig.sourceFluxField = "base_GaussianFlux_flux"
         starSelectorConfig.badFlags = ["base_PixelFlags_flag_edge",
                                            "base_PixelFlags_flag_interpolatedCenter",
                                            "base_PixelFlags_flag_saturatedCenter",
@@ -184,7 +128,7 @@ def setupDeterminer(exposure, nEigenComponents=3, starSelectorAlg="secondMoment"
                                            ]
         starSelectorConfig.widthStdAllowed = 0.5
 
-    starSelector = starSelectorClass(config=starSelectorConfig)
+    starSelector = starSelectorClass(config=starSelectorConfig,schema=schema)
 
     psfDeterminerFactory = measAlg.psfDeterminerRegistry["pca"]
     psfDeterminerConfig = psfDeterminerFactory.ConfigClass()
@@ -193,6 +137,7 @@ def setupDeterminer(exposure, nEigenComponents=3, starSelectorAlg="secondMoment"
     psfDeterminerConfig.sizeCellY = height//3
     psfDeterminerConfig.nEigenComponents = nEigenComponents
     psfDeterminerConfig.spatialOrder = 1
+    psfDeterminerConfig.spatialReject = 6.0
     psfDeterminerConfig.kernelSizeMin = 31
     psfDeterminerConfig.nStarPerCell = 0
     psfDeterminerConfig.nStarPerCellSpatialFit = 0 # unlimited
@@ -201,19 +146,25 @@ def setupDeterminer(exposure, nEigenComponents=3, starSelectorAlg="secondMoment"
     return starSelector, psfDeterminer
 
 def testPsfDeterminer(exposure):
-    """Test the (PCA) psfDeterminer"""
-    """
-    for starSelectorAlg in ["secondMoment",
-                                "objectSize",
-                                ]:
-        print "Using %s star selector" % (starSelectorAlg)
+    """starSelectorAlg "secondMoment",
+                                "objectSize"
         """
-    
+
     starSelector, psfDeterminer = setupDeterminer(exposure,
-                                                        nEigenComponents=2, starSelectorAlg="objectSize")
-    catalog = measure(exposure)
-    
+                                                    nEigenComponents=2, starSelectorAlg="secondMoment")
+
+    footprintSet = afwDetection.FootprintSet(exposure.getMaskedImage(), afwDetection.Threshold(100), "DETECTED")
+    catalog = measure(footprintSet, exposure)
+
     psfCandidateList = starSelector.run(exposure, catalog).psfCandidates
-        
+
     psf, cellSet = psfDeterminer.determinePsf(exposure, psfCandidateList, metadata)
     exposure.setPsf(psf)
+
+if __name__ == '__main__':
+    exposure = afwImage.ExposureF("dd_F02_S22_10_022.fits")
+    psfConfig = measAlg.GaussianPsfFactory()
+    psfConfig.defaultFwhm = 3.08
+    psf = psfConfig.apply(3.08)
+    exposure.setPsf(psf)
+    testPsfDeterminer(exposure)
