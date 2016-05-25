@@ -271,7 +271,7 @@ def offsets(coaddPath, exposureListPath, exposureDirPath):
                 f.write('%s\n' % exposurePath)
             else:
                 try:
-                    xoff, yoff, ccimgfull = findoffsets(exposureRef,exposure,hwid,ccimgfull)
+                    xoff, yoff = findoffsets(exposureRef,exposure,hwid)
                     xoffsets.append(xoff+xoffRef)
                     yoffsets.append(yoff+yoffRef)
                     print >> sys.stderr, "Offsets for exposure %s: %f %f" % (exposurePath, xoff, yoff,)
