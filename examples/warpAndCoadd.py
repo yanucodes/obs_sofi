@@ -36,7 +36,7 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.coadd.utils as coaddUtils
 
-from correlation import find_offsets
+from correlation import offsets
 
 class WarpAndCoaddConfig(pexConfig.Config):
     saveDebugImages = pexConfig.Field(
@@ -63,9 +63,8 @@ class WarpAndCoaddConfig(pexConfig.Config):
     )
     coadd = pexConfig.ConfigField(dtype = coaddUtils.Coadd.ConfigClass, doc = "")
     warp = pexConfig.ConfigField(dtype = afwMath.Warper.ConfigClass, doc = "")
-    
 
-def warpAndCoadd(coaddPath, exposureListPath, config):
+def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
     """Create a coadd by warping and psf-matching
     
     Inputs:
@@ -108,26 +107,53 @@ def warpAndCoadd(coaddPath, exposureListPath, config):
             try:
                 print >> sys.stderr, "Processing exposure: %s" % (exposurePath,)
                 startTime = time.time()
-                exposure = afwImage.ExposureF(os.path.join(exposureDirPath, exposurePath))
+                exposure = afwImage.ExposureF(exposurePath)
                 if config.saveDebugImages:
                     exposure.writeFits("exposure%s.fits" % (expNum,))
                 
                 if not coadd:
                     print >> sys.stderr, "Create warper and coadd with size and WCS matching the first/reference exposure"
-
-                    exposure.getWcs().shiftReferencePixel(100,100)
+                    
+                    exposureRef = exposure
+                    
+                    cd11, cd12 = exposure.getWcs().getCDMatrix()[0]
+                    cd21, cd22 = exposure.getWcs().getCDMatrix()[1]
+                    
+                    metadata = exposure.getWcs().getFitsMetadata()
+                    metadata.setDouble("CRPIX1",     612.0)
+                    metadata.setDouble("CRPIX2",     612.0)
+        
+                    auxWcs = afwImage.makeWcs(metadata)
+                    aux.setWcs(auxWcs)
+                    print aux.getWcs().getPixelOrigin(), aux.getWcs().getSkyOrigin()
+                    print exposure.getWcs().getPixelOrigin(), exposure.getWcs().getSkyOrigin()
                     
                     warper = afwMath.Warper.fromConfig(config.warp)
                     coadd = coaddUtils.Coadd.fromConfig(
                         bbox = aux.getBBox(),
-                        wcs = exposure.getWcs(),
+                        wcs = auxWcs,
                         config = config.coadd)
                     print "badPixelMask=", coadd.getBadPixelMask()
                     
+                    warpedExposure = warper.warpExposure(
+                                                         destWcs = auxWcs,
+                                                         srcExposure = exposure,
+                                                         maxBBox = aux.getBBox(),
+                                                         )
+                    
                     print >> sys.stderr, "Add reference exposure to coadd (without warping)"
-                    coadd.addExposure(exposure)
+                    coadd.addExposure(warpedExposure)
                 else:
-                    find_offsets(coadd.getCoadd(),exposure)
+                    xoff = xoffsets[expNum-1]
+                    yoff = yoffsets[expNum-1]
+                    
+                    metadata = exposure.getWcs().getFitsMetadata()
+                    
+                    metadata.setDouble("CRPIX1",     512.0 + xoff)
+                    metadata.setDouble("CRPIX2",     512.0 + yoff)
+                    
+                    exposure.setWcs(afwImage.makeWcs(metadata))
+                    
                     print >> sys.stderr, "Warp exposure"
                     warpedExposure = warper.warpExposure(
                         destWcs = coadd.getWcs(),
@@ -198,4 +224,6 @@ where:
     
     config = WarpAndCoaddConfig()
     
-    warpAndCoadd(coaddPath, exposureListPath, config)
+    xoffsets, yoffsets = offsets(coaddPath, exposureListPath, exposureDirPath)
+    
+    warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config)
