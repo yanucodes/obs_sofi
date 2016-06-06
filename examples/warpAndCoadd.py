@@ -144,8 +144,8 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
                     print >> sys.stderr, "Add reference exposure to coadd (without warping)"
                     coadd.addExposure(warpedExposure)
                 else:
-                    xoff = xoffsets[expNum-1]
-                    yoff = yoffsets[expNum-1]
+                    xoff = xoffsets[expNum-2]
+                    yoff = yoffsets[expNum-2]
                     
                     metadata = exposure.getWcs().getFitsMetadata()
                     
