@@ -28,7 +28,7 @@ def createFlat(flist):
         temp.append(tmp1.getMaskedImage().getImage().getArray())
         temp.append(tmp2.getMaskedImage().getImage().getArray())
 
-        tempFlats.append(np.mean(temp, axis = 0))
+        tempFlats.append(np.median(temp, axis = 0))
 
     tempOff = tempFlats[0]
     tempOffMask = tempFlats[1]
@@ -64,7 +64,7 @@ def createFlat(flist):
 
     flat = tempOnBias - tempOffBias
 
-    norm = np.mean(flat)
+    norm = np.median(flat)
 
     flat = flat/norm
 
@@ -76,9 +76,11 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Create a special flat for SOFI")
     parser.add_argument("--inputdir", default=".", help="Input directory")
+    parser.add_argumetn("--outputdir", default=".", help="Input directory")
     args = parser.parse_args()
     
     inputdir = args.inputdir
+    outputdir = arg.outputdir
 
     flist = glob.glob(os.path.join(inputdir, "FLAT_06Feb*.fits"))
 
@@ -86,4 +88,4 @@ if __name__ == "__main__":
 
     hdu = fits.PrimaryHDU(specialFlat)
 
-    hdu.writeto("flat.fits")
+    hdu.writeto(os.path.join(outputdir,"flat.fits"))
