@@ -35,8 +35,20 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.coadd.utils as coaddUtils
+import lsst.meas.algorithms as measAlg
+from lsst.meas.algorithms import SubtractBackgroundTask
+from SourceDetectionTask import run as sd
+from corrnew61 import offsets
 
-from correlation import offsets
+def setPsf(exposure):
+    psfConfig = measAlg.GaussianPsfFactory()
+    psfConfig.defaultFwhm = 3.4
+    psf = psfConfig.apply(3.4)
+    
+    exposure.setPsf(psf)
+    
+    im = exposure.getMaskedImage().getImage()
+    im -= float(np.median(im.getArray()))
 
 class WarpAndCoaddConfig(pexConfig.Config):
     saveDebugImages = pexConfig.Field(
@@ -86,6 +98,10 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
     print "bbox =", bbox
     
     #zpScaler = coadd.ZeropointScaler(config.coaddZeroPoint)
+    
+    #bsconfig = SubtractBackgroundTask.ConfigClass()
+    #bsconfig.statisticsProperty = "MEDIAN"
+    #backgroundTask = SubtractBackgroundTask(config=bsconfig)
 
     # process exposures
     accumGoodTime = 0
@@ -108,6 +124,10 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
                 print >> sys.stderr, "Processing exposure: %s" % (exposurePath,)
                 startTime = time.time()
                 exposure = afwImage.ExposureF(exposurePath)
+                #backgroundTask.run(exposure=exposure)
+                setPsf(exposure)
+                sd(exposure, display=False, threshold=5.0)
+                
                 if config.saveDebugImages:
                     exposure.writeFits("exposure%s.fits" % (expNum,))
                 
