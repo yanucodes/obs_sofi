@@ -46,7 +46,12 @@ def loadData():
     imFile = os.path.join(inputdir, "F02_S22_10_21-52.fits")
 
     exposure = afwImage.ExposureF(imFile)
-    psf = measAlg.SingleGaussianPsf(11, 11, 2)
+    
+    #psf = measAlg.SingleGaussianPsf(11, 11, 2)
+    psfConfig = measAlg.GaussianPsfFactory()
+    psfConfig.defaultFwhm = 3.08
+    psf = psfConfig.apply(3.08)
+    
     exposure.setPsf(psf)
 
     im = exposure.getMaskedImage().getImage()
@@ -54,16 +59,15 @@ def loadData():
 
     return exposure
 
-def run(display=False):
-    exposure = loadData()
+def run(exposure, display=False, framenumber=1, threshold=5.0):
+    
     schema = afwTable.SourceTable.makeMinimalSchema()
     #
     # Create the detection task
     #
     config = SourceDetectionTask.ConfigClass()
-    config.thresholdPolarity = "both"
     config.background.isNanSafe = True
-    config.thresholdValue = 5.0
+    config.thresholdValue = threshold
     detectionTask = SourceDetectionTask(config=config, schema=schema)
     #
     # And the measurement Task
@@ -80,7 +84,7 @@ def run(display=False):
     #
     # Print the schema the configuration produced
     #
-    print schema
+    #print schema
 
     #
     # Create the output table
@@ -97,23 +101,24 @@ def run(display=False):
 
     measureTask.run(sources, exposure)
     
-    print dir(sources)
-    print dir(sources.getTable())
-    print sources.getTable().getMetadata()
-    sources.writeFits('sources.fits')
+    #sources.writeFits('sources.fits')
     
-    
+
     if display:                         # display on ds9 (see also --debug argparse option)
-        frame = 1
+        frame = framenumber
         ds9.mtv(exposure, frame=frame)
 
         with ds9.Buffering():
             for s in sources:
                 xy = s.getCentroid()
-                ds9.dot('+', *xy, ctype=ds9.CYAN if s.get("flags_negative") else ds9.GREEN, frame=frame)
-                ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
-                ds9.dot('o', *xy, size=config.plugins["base_CircularApertureFlux"].radii[0],
-                        ctype=ds9.YELLOW, frame=frame)
+                t = not s.get("flags_negative")
+                if t:
+                    ds9.dot('*', *xy, ctype=ds9.RED if t else ds9.BLACK, frame=frame)
+                #ds9.dot(s.getShape(), *xy, ctype=ds9.RED, frame=frame)
+                #ds9.dot('o', *xy, size=config.plugins["base_CircularApertureFlux"].radii[0],
+                #ctype=ds9.YELLOW, frame=frame)
+
+    return sources, tab, result
 
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
@@ -132,4 +137,6 @@ if __name__ == "__main__":
         except ImportError as e:
             print >> sys.stderr, e
 
-    run(display=args.ds9)
+    exposure = loadData()
+
+    run(exposure, display=args.ds9)
