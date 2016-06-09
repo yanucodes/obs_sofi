@@ -28,7 +28,7 @@ def createFlat(flist):
         temp.append(tmp1.getMaskedImage().getImage().getArray())
         temp.append(tmp2.getMaskedImage().getImage().getArray())
 
-        tempFlats.append(np.mean(temp, axis = 0))
+        tempFlats.append(np.median(temp, axis = 0))
 
     tempOff = tempFlats[0]
     tempOffMask = tempFlats[1]
@@ -64,7 +64,7 @@ def createFlat(flist):
 
     flat = tempOnBias - tempOffBias
 
-    norm = np.mean(flat)
+    norm = np.median(flat)
 
     flat = flat/norm
 
