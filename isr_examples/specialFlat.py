@@ -76,9 +76,11 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Create a special flat for SOFI")
     parser.add_argument("--inputdir", default=".", help="Input directory")
+    parser.add_argumetn("--outputdir", default=".", help="Input directory")
     args = parser.parse_args()
     
     inputdir = args.inputdir
+    outputdir = arg.outputdir
 
     flist = glob.glob(os.path.join(inputdir, "FLAT_06Feb*.fits"))
 
@@ -86,4 +88,4 @@ if __name__ == "__main__":
 
     hdu = fits.PrimaryHDU(specialFlat)
 
-    hdu.writeto("flat.fits")
+    hdu.writeto(os.path.join(outputdir,"flat.fits"))
