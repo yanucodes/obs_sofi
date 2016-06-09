@@ -121,7 +121,7 @@ def calculateBkg(exposure, binSize = 256, algorithm = "NATURAL_SPLINE"):
 
 def scale(inputdir):
     
-    infile = glob.glob(os.path.join(inputdir, "dd_F02_S22_*.fits"))
+    infile = glob.glob(os.path.join(inputdir, "dd_05feb_F02_S22_10_*.fits"))
     
     avgscale = 0.0
     scale = []
@@ -301,7 +301,10 @@ def skyfilter(data, bkgs, gain, inputdir):
 
     skybeg = 0
     
-    infile = glob.glob(os.path.join(inputdir, "dd_F02_S22_*.fits"))
+    expPath = "/LSST/SOFI_RUN2/FIELDS/"
+    
+    infile = glob.glob(os.path.join(expPath, "05feb*.fits"))
+    print(infile)
     
     for i in range(len(data)):
         bkgs[i] = modeFromArray(data[i])
@@ -340,8 +343,10 @@ def skyfilter(data, bkgs, gain, inputdir):
         name = "bs_" + str(infile[30,43]) + ".fits"
         """
         #exposure.writeFits(os.path.join(inputdir, name))
+        print(i)
+        print(infile[i])
         fn = infile[i]
-        name = "bs_" + str(fn[30:47]) + ".fits"
+        name = "bs_" + str(fn[len(expPath):len(expPath)+20]) + ".fits"
         olddata, newheader = fits.getdata(infile[i], header=True)
         
         newheader.remove('ESO DET CHIP PXSPACE')
@@ -370,19 +375,17 @@ if __name__ == "__main__":
     
     inputdir = args.inputdir
     
+    scale, data, bkgs = scale(inputdir)
+    
     if args.flat:
-
-        scale, data, bkgs = scale(inputdir)
         
-        """
         plane = medplane(data, scale)
-
         hdu = fits.PrimaryHDU(plane)
         hdu.writeto('flat.fits', clobber = True)
         print("created flat")
-        """
 
-    flatExp = afwImage.ExposureF("flat2.fits")
+
+    flatExp = afwImage.ExposureF("flat.fits")
     flat = flatExp.getMaskedImage()
 
     gain = gainMap(flatExp)
@@ -390,20 +393,13 @@ if __name__ == "__main__":
     print("created gainmap")
 
     exp1 = afwImage.ExposureF("gain.fits")
-    exp2 = afwImage.ExposureF("gain.F02_S22_10_21-52.fits")
+    #exp2 = afwImage.ExposureF("gain.F02_S22_10_21-52.fits")
 
-    mi1 = exp1.getMaskedImage()
-    mi2 = exp2.getMaskedImage()
+    #mi1 = exp1.getMaskedImage()
+    #mi2 = exp2.getMaskedImage()
 
-    mi1 -= mi2
+    #mi1 -= mi2
 
-    mi1.writeFits("imdif.fits")
-
-    imlist = glob.glob(os.path.join(inputdir, "dd_F02_S22_*.fits"))
+    #mi1.writeFits("imdif.fits")
 
     skyfilter(data, bkgs, gain, inputdir)
-
-
-
-
-
