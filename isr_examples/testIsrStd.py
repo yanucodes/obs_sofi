@@ -34,14 +34,14 @@ def createAndSubtractDark():
                     
             #imcombine (need to add sigmaclip)
             #imcombine (input="@lista.tmp",output= "dark_"//ima, combine="average", reject="sigclip", lsigma=5, hsigma=5)
-            tempDark = np.mean(imSlice, axis=0)
+            tempDark = np.median(imSlice, axis=0)
             tempDark = sigma_clip(tempDark, sigma=5, iters=5)
 
             #  further compress the image on the x axis...
             #  blkavg (input="dark_"//ima,output = "tmp1", b1 = 34, b2=1, option = "average")
 
             tempDark = tempDark.reshape((tempDark.shape[0], -1, 1))
-            tempDark = np.mean(tempDark, axis=1)
+            tempDark = np.median(tempDark, axis=1)
         
             # smooth it
             tempDark = tempDark.reshape(-1)
@@ -52,16 +52,15 @@ def createAndSubtractDark():
         
             imArray = maskedImage.getImage().getArray()
             imArray = sigma_clip(imArray, sigma=3, iters=5)
-            im_mean = np.mean(imArray)
-            darkArray[k] = tempDark - im_mean
-            k = k + 1
+            im_median = np.median(imArray)
+            darkArray[j-kbeg] = tempDark - im_median
     
-        darkArr = np.mean(darkArray, axis=0)
+        darkArr = np.median(darkArray, axis=0)
         print darkArr.shape
         darkArrClipped = np.ma.getdata(sigma_clip(darkArr, sigma=5, iters=5))
     
         hdu = fits.PrimaryHDU(darkArrClipped)
-        hdu.writeto('dark.fits')
+        hdu.writeto(os.path.join(inputdir, "dark.fits"), clobber = True)
     
         darkExposure = afwImage.ExposureF(os.path.join(inputdir, "dark.fits"))
         darkMaskedImage = darkExposure.getMaskedImage()
@@ -72,9 +71,12 @@ def createAndSubtractDark():
         darkCorrection(maskedImage, darkMaskedImage, 1.0, 1.0)
         
         fn = imlist[k]
-        name = "dd" + str(fn[len(inputdir)+12:len(inputdir)+31]) + ".fits"
+        name = "dd_" + str(fn[len(inputdir)+11:len(inputdir)+31]) + ".fits"
         
-        maskedImage.writeFits(name)
+        maskedImage.writeFits(os.path.join(inputdir, "postISR",name))
+
+        if (i >= 5 and i < (len(imlist)-4)):
+            kbeg += 1
 
 
 def runIsr():
@@ -94,8 +96,8 @@ def runIsr():
     isrConfig.assembleCcd.setGain = False
     SofiIsrTask = SofiIsrTask(config = isrConfig)
     
-    darkExposure = afwImage.ExposureF(os.path.join(inputdir,"calib", "DARK_10.fits.gz"))
-    flatExposure = afwImage.ExposureF(os.path.join(inputdir,"calib","Flat06Feb.fits.gz"))
+    darkExposure = afwImage.ExposureF(os.path.join(inputdir,"calib", "dark10.fits"))
+    flatExposure = afwImage.ExposureF(os.path.join(inputdir,"calib","flat.fits"))
     
     imlist = glob.glob(os.path.join(inputdir,"05feb_F02_S22_10_*.fits"))
     
