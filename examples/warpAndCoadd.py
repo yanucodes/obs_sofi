@@ -38,7 +38,7 @@ import lsst.coadd.utils as coaddUtils
 import lsst.meas.algorithms as measAlg
 from lsst.meas.algorithms import SubtractBackgroundTask
 from SourceDetectionTask import run as sd
-from corrnew61 import offsets
+from correlation import offsets
 
 def setPsf(exposure):
     psfConfig = measAlg.GaussianPsfFactory()
