@@ -146,7 +146,7 @@ def offsets(coaddPath, exposureListPath, exposureDirPath):
     f = open(os.path.join(exposureDirPath, exposureListPath), 'w')
     
     
-    infile = glob.glob(os.path.join(exposureDirPath, "bs_dd_F02_S22_*.fits"))
+    infile = glob.glob(os.path.join(exposureDirPath, "bs_*.fits"))
     
     flist = np.zeros(len(infile))
     s = []
@@ -158,7 +158,7 @@ def offsets(coaddPath, exposureListPath, exposureDirPath):
 
         i = 0
         while (i<len(sources)):
-            if (int(sources[i].getFootprint().getNpix())>100 or sources[j].get("flags_negative")):
+            if (int(sources[i].getFootprint().getNpix())>100 or sources[i].get("flags_negative")):
                 del sources[i]
             else:
                 i+=1
