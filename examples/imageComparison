@@ -1,0 +1,145 @@
+import os
+import sys
+import glob
+import numpy as np
+from astropy.io import fits
+import matplotlib.pyplot as plt
+import lsst.afw.image as afwImage
+
+
+def subtractImages(pathToImage1, pathToImage2):
+
+    img1 = afwImage.MaskedImageF(pathToImage1)
+    img2 = afwImage.MaskedImageF(pathToImage2)
+
+    img1 -=img2
+
+    img1.writeFits("imgsubtracted.fits")
+
+    arr1 = img1.getImage().getArray()
+    arr2 = img2.getImage().getArray()
+
+    hdu = fits.PrimaryHDU(arr1)
+    hdu.writeto("arr1.fits", clobber = True)
+    hdu = fits.PrimaryHDU(arr2)
+    hdu.writeto("arr2.fits", clobber = True)
+
+    nx, ny = arr1.shape
+    
+    fracArr = np.zeros((nx,ny))
+
+    for x in range(nx):
+        for y in range(ny):
+            if arr2[x,y]!=0.0:
+                fracArr[x,y] = arr1[x,y]/arr2[x,y]
+            elif arr1[x,y]==0.0:
+                fracArr[x,y]=0.0
+            else:
+                fracArr[x,y]=99.9
+
+    fracArr = fracArr.ravel()
+
+    valMax = fracArr.max()
+    valMin = fracArr.min()
+
+    hist = np.zeros(100)
+    d = (valMax - valMin)/100.0
+    bins = np.arange(-0.5,0.51, 0.01)
+
+    print bins.shape
+
+    badNeg=[]
+    badPos=[]
+    sbp = []
+
+    for i in range(nx*ny):
+        val = fracArr[i]
+        if fracArr[i]>0.02 and fracArr[i]!=99.9:
+            badPos.append(i)
+        if fracArr[i]<-0.02:
+            badNeg.append(i)
+        if fracArr[i]==99.9:
+            sbp.append(i)
+                
+        j = int((fracArr[i] - bins[0])/0.01)
+        if j < 100 and j>0:
+            hist[j]+=1
+        """
+        for j in range(100):
+            if (fracArr[i]>bins[j] and fracArr[i]<bins[j+1]):
+                hist[j]+=1
+                break
+        """
+
+
+    badpix = badPos + badNeg + sbp
+
+    bimg = np.zeros((nx,ny))
+    
+    for i in sbp:
+        x = i%nx
+        y = i/nx
+        bimg[x,y] = 1000
+
+    hdu = fits.PrimaryHDU(bimg)
+    hdu.writeto("badpiximg.fits", clobber = True)
+
+    badNeg = len(badNeg)
+    badPos = len(badPos)
+    sbp = len(sbp)
+    print len(badpix)
+
+    print badNeg, float(badNeg)/float(nx*ny)
+    print badPos, float(badPos)/float(nx*ny)
+    print sbp, float(sbp)/float(nx*ny)
+    print badNeg+badPos+sbp, float(badNeg+badPos+sbp)/float(nx*ny)
+
+    xx = bins[0:100]
+    num_bins = 100
+
+    f, (ax, ax2) = plt.subplots(2,1,sharex=True)
+
+    n, bins, patches = ax.hist(fracArr, num_bins, facecolor='green', alpha=0.5)
+    n, bins, patches = ax2.hist(fracArr, num_bins, facecolor='green', alpha=0.5)
+
+    ax.set_ylim(hist.max()-1000000, hist.max()+1000000/2)  # outliers only
+    ax2.set_ylim(0, 10)  # most of the data
+
+    ax.spines['bottom'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax.xaxis.tick_top()
+    ax.tick_params(labeltop='off')  # don't put tick labels at the top
+    ax2.xaxis.tick_bottom()
+
+    d = .005
+
+    kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
+    ax.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+    ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+
+    kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+    ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
+    ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+
+    #plt.plot(xx, hist, color='black', lw=2)
+    #plt.plot(xx, histspec, 'r')
+    plt.show()
+
+
+
+
+if __name__ == "__main__":
+
+    helpStr = """
+   Usage: imageComparison.py image1 image2
+   Subtract image2 from image1, save the output image, plot a histogram
+    """
+    
+    if len(sys.argv) != 3:
+        print helpStr
+        sys.exit(0)
+
+    pathToImage1 = sys.argv[1]
+    pathToImage2 = sys.argv[2]
+
+    arr = subtractImages(pathToImage1, pathToImage2)
