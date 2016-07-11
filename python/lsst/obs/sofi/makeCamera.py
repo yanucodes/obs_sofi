@@ -121,7 +121,7 @@ class Sofi(cameraGeom.Camera):
             self.populateAmpBoxes(nPixX, nPixY, pre, hOscan, 0, ext, ix, iy,
                          isPerAmp, record)
         iy = 1
-            for ix in range(nAmpX):
+        for ix in range(nAmpX):
             record = ampCatalog.addNew()
             self.populateAmpBoxes(nPixX, nPixY-vOscan, pre, hOscan, vOscan, ext, ix, iy,
                          isPerAmp, record)

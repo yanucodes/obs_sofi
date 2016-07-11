@@ -26,13 +26,14 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 from lsst.daf.butlerUtils import CameraMapper
 import lsst.pex.policy as pexPolicy
-from .monocam import Monocam
-from .hack import getDatabase, fakeWcs
+from makeCamera import Sofi
 
-__all__ = ["MonocamMapper"]
+__all__ = ["SofiMapper"]
+
+root = '.'
 
 
-class MonocamMapper(CameraMapper):
+class SofiMapper(CameraMapper):
     packageName = 'obs_sofi'
 
     def __init__(self, inputPolicy=None, **kwargs):
@@ -159,4 +160,10 @@ def removeKeyword(md, key):
     """Remove a keyword from a header without raising an exception if it doesn't exist"""
     if md.exists(key):
         md.remove(key)
+
+def getCameraName():
+    return "Sofi"
+
+def getPackageName():
+    return "obs_sofi"
 
