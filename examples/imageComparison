@@ -5,7 +5,6 @@ import numpy as np
 from astropy.io import fits
 from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
 import lsst.afw.image as afwImage
 import matplotlib.patches as mpatches
 
@@ -43,7 +42,7 @@ def subtractImages(pathToImage1, pathToImage2, histname):
     
     nx, ny = arr.shape
 
-    bimg = np.zeros((nx,ny))
+    bimg = np.zeros((nx,ny)) #image with pixel value = 1000 if the pixel deviation is too high and 0 otherwise
     
     devMax = np.abs(0.005*meanVal)
     arr = arr.ravel()
@@ -64,6 +63,7 @@ def subtractImages(pathToImage1, pathToImage2, histname):
     hdu = fits.PrimaryHDU(bimg)
     hdu.writeto("badpiximg.fits", clobber = True)
 
+    #for each type of images flat, dark, postISR the range should be choosen accordingly
     #yn, bins = np.histogram(arr, bins = 51, density=False)
     yn, bins = np.histogram(arr, bins = 51, range=(-0.006,0.006), density=False)
 
@@ -76,6 +76,7 @@ def subtractImages(pathToImage1, pathToImage2, histname):
     print "l", l
 
     devNum = (np.sum(yn[k+l+1:51])+np.sum(yn[0:k-l]))
+    #number of deviated pixels
 
 
     widths = np.diff(bins)
@@ -86,7 +87,7 @@ def subtractImages(pathToImage1, pathToImage2, histname):
     k = np.where(yn == yn.max())
     k = k[0]
     
-    mnp = ((1024*1024-devNum)*100/1024/1024)
+    mnp = ((1024*1024-devNum)*100/1024/1024) #percent of pixels within the error range
     if round(mnp) == 100:
         mnp = 99.9
 
