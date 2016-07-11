@@ -3,126 +3,148 @@ import sys
 import glob
 import numpy as np
 from astropy.io import fits
+from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 import matplotlib.pyplot as plt
 import lsst.afw.image as afwImage
+import matplotlib.patches as mpatches
 
+def func(x, a, x0, sigma):
+    return a*np.exp(-(x-x0)**2/(2*sigma**2))
 
-def subtractImages(pathToImage1, pathToImage2):
+def subtractImages(pathToImage1, pathToImage2, histname):
 
     img1 = afwImage.MaskedImageF(pathToImage1)
     img2 = afwImage.MaskedImageF(pathToImage2)
-
-    img1 -=img2
-
-    img1.writeFits("imgsubtracted.fits")
-
+    
     arr1 = img1.getImage().getArray()
     arr2 = img2.getImage().getArray()
+    
+    
+    
+    img1 -=img2
+    
+    img1.writeFits("imgsubtracted.fits")
+    
+    arr = img1.getImage().getArray()
+    arr2 = (arr1+arr2)/2.0
+    
+    meanVal = np.mean(arr2)
+    print meanVal
+    meanDev = np.mean(arr)
+    print meanDev
 
-    hdu = fits.PrimaryHDU(arr1)
-    hdu.writeto("arr1.fits", clobber = True)
+    hdu = fits.PrimaryHDU(arr)
+    hdu.writeto("arr.fits", clobber = True)
     hdu = fits.PrimaryHDU(arr2)
     hdu.writeto("arr2.fits", clobber = True)
-
-    nx, ny = arr1.shape
     
-    fracArr = np.zeros((nx,ny))
-
-    for x in range(nx):
-        for y in range(ny):
-            if arr2[x,y]!=0.0:
-                fracArr[x,y] = arr1[x,y]/arr2[x,y]
-            elif arr1[x,y]==0.0:
-                fracArr[x,y]=0.0
-            else:
-                fracArr[x,y]=99.9
-
-    fracArr = fracArr.ravel()
-
-    valMax = fracArr.max()
-    valMin = fracArr.min()
-
-    hist = np.zeros(100)
-    d = (valMax - valMin)/100.0
-    bins = np.arange(-0.5,0.51, 0.01)
-
-    print bins.shape
-
-    badNeg=[]
-    badPos=[]
-    sbp = []
-
-    for i in range(nx*ny):
-        val = fracArr[i]
-        if fracArr[i]>0.02 and fracArr[i]!=99.9:
-            badPos.append(i)
-        if fracArr[i]<-0.02:
-            badNeg.append(i)
-        if fracArr[i]==99.9:
-            sbp.append(i)
-                
-        j = int((fracArr[i] - bins[0])/0.01)
-        if j < 100 and j>0:
-            hist[j]+=1
-        """
-        for j in range(100):
-            if (fracArr[i]>bins[j] and fracArr[i]<bins[j+1]):
-                hist[j]+=1
-                break
-        """
-
-
-    badpix = badPos + badNeg + sbp
-
-    bimg = np.zeros((nx,ny))
     
-    for i in sbp:
-        x = i%nx
-        y = i/nx
-        bimg[x,y] = 1000
+    
+    nx, ny = arr.shape
+
+    bimg = np.zeros((nx,ny)) #image with pixel value = 1000 if the pixel deviation is too high and 0 otherwise
+    
+    devMax = np.abs(0.005*meanVal)
+    arr = arr.ravel()
+    apix = []
+    for i in range(len(arr)):
+        if arr[i]>devMax or arr[i]<-devMax:
+            #print i, nx
+            x = int(i%nx)
+            y = int(i/nx)
+            #print x,y
+            bimg[x,y] = 1000
+            apix.append(i)
+            
+
+    print("awfulpixels %d %f" % (len(apix), len(apix)/float(nx*ny)) )
+
 
     hdu = fits.PrimaryHDU(bimg)
     hdu.writeto("badpiximg.fits", clobber = True)
 
-    badNeg = len(badNeg)
-    badPos = len(badPos)
-    sbp = len(sbp)
-    print len(badpix)
+    #for each type of images flat, dark, postISR the range should be choosen accordingly
+    #yn, bins = np.histogram(arr, bins = 51, density=False)
+    yn, bins = np.histogram(arr, bins = 51, range=(-0.006,0.006), density=False)
 
-    print badNeg, float(badNeg)/float(nx*ny)
-    print badPos, float(badPos)/float(nx*ny)
-    print sbp, float(sbp)/float(nx*ny)
-    print badNeg+badPos+sbp, float(badNeg+badPos+sbp)/float(nx*ny)
+    k = np.where(yn == yn.max())
+    k = int(k[0])
+    print k
+    l = np.where(bins < bins[k]+devMax)
+    l = l[0]
+    l = l[-1]-k
+    print "l", l
 
-    xx = bins[0:100]
-    num_bins = 100
+    devNum = (np.sum(yn[k+l+1:51])+np.sum(yn[0:k-l]))
+    #number of deviated pixels
 
-    f, (ax, ax2) = plt.subplots(2,1,sharex=True)
 
-    n, bins, patches = ax.hist(fracArr, num_bins, facecolor='green', alpha=0.5)
-    n, bins, patches = ax2.hist(fracArr, num_bins, facecolor='green', alpha=0.5)
+    widths = np.diff(bins)
+    yn = yn.astype(float)
+    yn/=float(nx*ny)
 
-    ax.set_ylim(hist.max()-1000000, hist.max()+1000000/2)  # outliers only
-    ax2.set_ylim(0, 10)  # most of the data
 
-    ax.spines['bottom'].set_visible(False)
-    ax2.spines['top'].set_visible(False)
-    ax.xaxis.tick_top()
-    ax.tick_params(labeltop='off')  # don't put tick labels at the top
-    ax2.xaxis.tick_bottom()
+    k = np.where(yn == yn.max())
+    k = k[0]
+    
+    mnp = ((1024*1024-devNum)*100/1024/1024) #percent of pixels within the error range
+    if round(mnp) == 100:
+        mnp = 99.9
 
-    d = .005
+    print (len(widths))
 
-    kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
-    ax.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
-    ax.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
 
-    kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
-    ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
-    ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
+    3
+    plt.bar(bins[k+l+1:51], yn[k+l+1:51], widths[k+l+1:51], color= "magenta")
+    plt.bar(bins[k-l:k+l+1], yn[k-l:k+l+1], widths[k-l:k+l+1], color= "blue")
 
-    #plt.plot(xx, hist, color='black', lw=2)
-    #plt.plot(xx, histspec, 'r')
+    plt.xlabel('Pixel value difference', size = 'medium')
+    plt.ylabel('Number of pixels normalized to the total number of pixels', size = 'medium')
+    plt.yscale('log')
+
+    plt.axis([-0.006,0.006,1e-7,100])
+
+    maxbin = "   Central bins contain %.1f" % mnp
+    maxbin = maxbin + """%
+    of total number of pixels"""
+
+
+
+    devpxs = "Number of deviant pixels %d" % devNum
+
+    plt.text(-0.0055, 0.01, devpxs, ha='left', va='top', size = 'medium')
+    plt.text(-0.0055, 0.1, maxbin, ha='left', va='top', size = 'medium')
+    print(yn[k])
+
+    keytext = "more than %.1f" % np.abs(devMax*100/meanVal)
+    keytext = "Pixel value difference\n"+ keytext + "%"
+
+    mag_patch = mpatches.Patch(color='magenta', label=keytext)
+
+    keytext = "less than %.1f" % np.abs(devMax*100/meanVal)
+    keytext = "Pixel value difference\n"+ keytext + "%"
+
+    blue_patch = mpatches.Patch(color='blue', label=keytext)
+    extra = mpatches.Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0, label="*from mean pixel value")
+    plt.legend(handles=[blue_patch, mag_patch,extra], fontsize = 12)
+
+
+    meanWidth = np.mean(widths)
+    
+    delta = meanWidth/meanVal
+    
+    print delta
+
+    plt.tick_params(axis='both', which='major', labelsize=12)
+
+    d = .015
+
+    """
+    f.text(0.06, 0.5, 'Number of pixels normalized to the total number of pixels', ha='center', va='center', rotation='vertical', size = 'large')
+    f.text(0.5, 0.04, 'Pixel values difference', ha='center', va='center', size = 'large')
+    """
+
+    plt.savefig(histname, orientation = 'landscape', format = 'png')
     plt.show()
 
 
@@ -131,15 +153,16 @@ def subtractImages(pathToImage1, pathToImage2):
 if __name__ == "__main__":
 
     helpStr = """
-   Usage: imageComparison.py image1 image2
-   Subtract image2 from image1, save the output image, plot a histogram
+   Usage: imageComparison.py image1 image2 histname
+   Subtract image2 from image1, save the output image, plot a histogram, save in hist
     """
     
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print helpStr
         sys.exit(0)
 
     pathToImage1 = sys.argv[1]
     pathToImage2 = sys.argv[2]
+    histname = sys.argv[3]
 
-    arr = subtractImages(pathToImage1, pathToImage2)
+    arr = subtractImages(pathToImage1, pathToImage2, histname)
