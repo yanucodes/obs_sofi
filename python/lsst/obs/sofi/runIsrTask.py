@@ -5,7 +5,7 @@ import makeCamera
 import sys, numpy
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-from lsst.obs.sofi.makeCamera import createDetector
+from lsst.obs.sofi.makeCamera import Sofi
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
