@@ -3,7 +3,6 @@ import os
 import re
 from lsst.pipe.tasks.ingest import IngestTask, ParseTask, RegisterTask, assertCanCopy
 from lsst.pipe.tasks.ingestCalibs import CalibsParseTask
-from .hack import getDatabase, getHeader, getDateFromHeader, getShutterData
 
 # Lookup table for lab data
 # XXX This is completely made up and needs to be updated with the real values when they become available.
