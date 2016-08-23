@@ -1,89 +1,88 @@
 #<?cfg paf policy ?>
 
-needCalibRegistry: true
-
-camera:        "../description/camera/SOFI_geom.paf"
-registryPath: "../input/inputregistry.sqlite3"
-calibRegistryPath: "../input/calibregistry.sqlite3"
+needCalibRegistry: false
 
 defaultLevel: "Ccd"
 
 exposures: {
     raw: {
-    template:    "FIELDS/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(number)03d.fits"
-        python:       "lsst.afw.image.DecoratedImageU"
-        persistable:  "DecoratedImageU"
-        storage:      "FitsStorage"
+        template:    "FIELDS/%(pointing)s_%(dateObs)s/F02_%(pointing)s_%(expTime)d_%(expNum)03d.fits"
+        python:     "lsst.afw.image.DecoratedImageU"
+        persistable: "DecoratedImageU"
+        storage:     "FitsStorage"
         level:        "Ccd"
-        tables:       "raw"
+        tables:        raw
     }
     postISRCCD: {
-        template:    "postISRCCD/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(number)03d.fits"
-        python:       "lsst.afw.image.exposureF"
-        persistable:  "exposureF"
-        storage:      "FitsStorage"
-        level:        "Ccd"
-        tables:       "raw"
-    }
-    calexp: {
-        template:      "calexp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(number)03d.fits"
-        python:        "lsst.afw.image.exposureF"
-        persistable:   "exposureF"
-        storage:       "FitsStorage"
-        level:         "Ccd"
-        tables:        "raw"
-    }
-    flatOut: {
-        template:    "FLAT/FLAT_%(dateObs)s_%(number)03d.fits"
-        python:        "lsst.afw.image.exposureF"
-        persistable:    "exposureF"
+        template:    "FIELDS/postISR/%(dateObs)s_F02_%(pointing)s_%(expTime)d_%(expNum)03d.fits"
+        python:        "lsst.afw.image.ExposureF"
+        persistable:        "ExposureF"
         storage:    "FitsStorage"
         level:        "Ccd"
-        tables:       "raw"
-        columns:      "expnum"
+        tables:        raw
     }
+    icExp: {
+        template:      "FIELDS/icExp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
+        python:        "lsst.afw.image.ExposureF"
+        persistable:        "ExposureF"
+        storage:    "FitsStorage"
+        level:        "Ccd"
+        tables:        raw
+    }
+    calexp: {
+        template:      "FIELDS/calexp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
+        python:        "lsst.afw.image.ExposureF"
+        persistable:        "ExposureF"
+        storage:    "FitsStorage"
+        level:        "Ccd"
+        tables:        raw
+    }
+
     coaddTempExp: {
-        template:    "coaddTempExp/coadd_%(pointing)s.fits"
+        template:    "FIELDS/coaddTempExp/coadd_%(pointing)s.fits"
         python:      "lsst.afw.image.exposureF"
         persistable: "exposureF"
         storage:     "FitsStorage"
         tables:       "raw"
     }
+
 }
 
 calibrations: {
-    flat: {
-        template:    "FLAT/FLAT_%(dateObs)s.fits.gz"
-        python:        "lsst.afw.image.DecoratedImageU"
-        persistable:    "DecoratedImageU"
-        storage:        "FitsStorage"
-        level:        "Ccd"
-        tables:       "calib"
-    }
     dark: {
-        template:    "DARK_%(exptime)f.fits.gz"
-        python:        "lsst.afw.image.DecoratedImageU"
-        persistable:    "DecoratedImageU"
-        storage:        "FitsStorage"
-        level:        "Ccd"
-        tables:       "calib"
+        template:    "calib/dark%(expTime)f.fits"
+        python:      "lsst.afw.image.DecoratedImageF"
+        persistable: "DecoratedImageF"
+        storage:     "FitsStorage"
+        level:       "Ccd"
+        tables:      "calib"
+
+    }
+    flat: {
+        template:    "flat/specialflat.fits"
+        python:      "lsst.afw.image.DecoratedImageF"
+        persistable: "DecoratedImageF"
+        storage:     "FitsStorage"
+        level:       "Ccd"
+        tables:      "calib"
+    }
 }
 
 datasets: {
-    ccdExpnosureId: {
+    ccdExposureId: {
         template:     "ignored"
         # Provide something to import, although we actually return a tuple
         python:       "lsst.daf.base.PropertySet"
         persistable:  "ignored"
-        storage:      "ignored"
+        storage:      "ignored:ccdExposureId"
         tables:       "raw"
     }
-    ccdexpnumId_bits: {
+    ccdExposureId_bits: {
         template:     "ignored"
         # Provide something to import, although we actually return a tuple
         python:       "lsst.daf.base.PropertySet"
         persistable:  "ignored"
-        storage:      "ignored"
+        storage:      "ignored:ccdExposureId_bits"
         tables:       "raw"
     }
     goodSeeingCoaddId: {
@@ -134,33 +133,234 @@ datasets: {
         storage:      "ignored"
         tables:       "raw"
     }
-
+    icExpBackground: {
+        template:      "icExp/icExpBackground_v%(expNum)d.fits"
+        python:        "lsst.afw.math.BackgroundList"
+        persistable:   "PurePythonClass"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+    }
+    calexpBackground: {
+        template:      "calexp/v%(expNum)d/bkgd.fits"
+        python:        "lsst.afw.math.BackgroundList"
+        persistable:   "PurePythonClass"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+    }
     icSrc: {
-        template:      "work/%(date)d/ICSRC-%(expnum)d_%(filter)s.fits"
+        template:      "icSrc/%(dateObs)d/ICSRC-%(expnum)d_%(filter)s.fits"
         python:        "lsst.afw.table.SourceCatalog"
         persistable:        "SourceCatalog"
         storage:    "FitsCatalogStorage"
         tables:        raw
-        tables:        raw_skyTile
     }
-    icMatch: {
-        template:      "work/%(date)d/ICMATCH_%(expnum)d_%(filter)s.fits"
+    icSrc_schema: {
+        template:      "schema/icSrc.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:   "SourceCatalog"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+    }
+    srcMatch: {
+        template:      "srcMatch/v%(expNum)d_f%(filter)s.fits"
         python:        "lsst.afw.table.BaseCatalog"
         persistable:        "BaseCatalog"
         storage:    "FitsCatalogStorage"
         tables:        raw
-        tables:        raw_skyTile
     }
-    log: {
-        template:      "logs/%(date)s/run.log"
-        python:        "str"
-        persistable:   "None"
-        storage:       "TextStorage"
+    apCorr: {
+        template:      "apCorr/v%(expNum)d_f%(filter)s.pickle"
+        python:        "lsst.meas.algorithms.ApertureCorrection"
+        persistable:        "ApertureCorrection"
+        storage:    "PickleStorage"
+        tables:        raw
     }
-    logDir: {
-        template:      "logs/%(date)s/"
-        python:        "str"
-        persistable:   "None"
-        storage:       "None"
+    forced_src: {
+        template:      "forced/%(tract)d/v%(expNum)d_f%(filter)s.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "SourceCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    forced_config: {
+        template:      "config/forced.py"
+        python:        "lsst.meas.base.forcedCcd.ForcedCcdMeasurementConfig"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+    }
+    forced_metadata: {
+        template:      "forced_metadata/v%(expNum)d_f%(filter)s.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
+        tables:        raw
+    }
+    forced_schema: {
+        template:      "schema/forced.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "ignored"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    src: {
+        template:      "src/SRC-%(expnum)d_%(filter)s.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "SourceCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    src_schema: {
+        template:      "schema/src.fits"
+        python:        "lsst.afw.table.SourceCatalog"
+        persistable:        "SourceCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    transformed_src: {
+        template:      "transformed_src/v%(expNum)d_f%(filter)s.fits"
+        python:        "lsst.afw.table.BaseCatalog"
+        persistable:   "ignored"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+    }
+    transformed_src_schema: {
+        template:      "schema/transformed_src.fits"
+        python:        "lsst.afw.table.BaseCatalog"
+        persistable:   "ignored"
+        storage:       "FitsCatalogStorage"
+        tables:        raw
+    }
+    modelfits: {
+        template:      "modelfits/v%(expNum)d_f%(filter)s.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    modelfits_schema: {
+        template:      "schema/modelfits.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    deepCoadd_modelfits: {
+        template:      "deepCoadd_results/%(filter)s_t%(tract)d_p%(patch)s/modelfits_%(filter)s_%(tract)d_%(patch)s.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    deepCoadd_modelfits_schema: {
+        template:      "schema/deepCoadd_modelfits.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    deepCoadd_multiModelfits: {
+        template:      "deepCoadd_results/%(filter)s_t%(tract)d_p%(patch)s/multiModelfits_%(filter)s_%(tract)d_%(patch)s.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    deepCoadd_multiModelfits_schema: {
+        template:      "schema/deepCoadd_multiModelfits.fits"
+        python:        "lsst.meas.multifit.ModelFitCatalog"
+        persistable:        "ModelFitCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    Mosaic_config: {
+        template:      "config/mosaic.py"
+        python:        "lsst.meas.mosaic.mosaicTask.MosaicConfig"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+    }
+    Mosaic_metadata: {
+        template:      "metadata/Mosaic.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
+        tables:        raw
+    }
+    processCcd_config: {
+        template:      "config/processCcd.py"
+        python:        "lsst.pipe.tasks.processCcd.ProcessCcdConfig"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+    }
+    processCcd_metadata: {
+        template:      "processCcd_metadata/v%(expNum)d_f%(filter)s.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
+        tables:        raw
+    }
+    transformSrcMeasurement_config: {
+        template:      "config/transformSrcMeasurement.py"
+        python:        "lsst.pipe.tasks.transformMeasurement.RunTransformConfig"
+        persistable:   "Config"
+        storage:       "ConfigStorage"
+        tables:        raw
+    }
+    transformSrcMeasurement_metadata: {
+        template:      "transformSrcMeasurement_metadata/v%(expNum)d_f%(filter)s.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:   "PropertySet"
+        storage:       "BoostStorage"
+        tables:        raw
+    }
+    measureCcd_config: {
+        template:      "config/measureCcd.py"
+        python:        "lsst.meas.multifit.measureCcd.MeasureCcdConfig"
+        persistable:      "Config"
+        storage:    "ConfigStorage"
+        tables:        raw
+    }
+    measureCcd_metadata: {
+        template:      "measureCcd_metadata/v%(expNum)d_f%(filter)s.boost"
+        python:        "lsst.daf.base.PropertySet"
+        persistable:        "PropertySet"
+        storage:    "BoostStorage"
+        tables:        raw
+    }
+    IngestIndexedReferenceTask_config: {
+        template:      "config/IngestIndexedReferenceTask.py"
+        python:        "lsst.pipe.tasks.indexReferenceTask.IngestIndexedReferenceConfig"
+        persistable:   "Config"
+        storage:       "ConfigStorage"
+    }
+    cal_ref_cat: {
+        persistable: SourceCatalog
+        python: lsst.afw.table.SourceCatalog
+        storage: FitsCatalogStorage
+        table: ignored
+        template: photo_astro_ref/%(pixel_id)s.fits
+    }
+    refcat: {
+        template:      "refcat.fits"
+        python:        "lsst.afw.table.SimpleCatalog"
+        persistable:        "SimpleCatalog"
+        storage:    "FitsCatalogStorage"
+        tables:        raw
+    }
+    dark_config: {
+        template: "config/dark.py"
+        python: "lsst.pipe.drivers.constructCalibs.DarkConfig"
+        persistable: "Config"
+        storage: "ConfigStorage"
+        tables: raw
+    }
+    flat_config: {
+        template: "config/flat.py"
+        python: "lsst.pipe.drivers.constructCalibs.FlatConfig"
+        persistable: "Config"
+        storage: "ConfigStorage"
+        tables: raw
     }
 }
