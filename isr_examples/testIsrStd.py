@@ -12,7 +12,7 @@ from lsst.ip.isr.isr import darkCorrection
 
 def createAndSubtractDark():
     
-    imlist = glob.glob(os.path.join(inputdir, "postISR", "df_05feb_F02_S22_10_*.fits"))
+    imlist = glob.glob(os.path.join(outputdir, "df_F02_*.fits"))
     
     darkArray = np.zeros((5, 1024,1024))
     
@@ -56,13 +56,12 @@ def createAndSubtractDark():
             darkArray[j-kbeg] = tempDark - im_median
     
         darkArr = np.median(darkArray, axis=0)
-        print darkArr.shape
         darkArrClipped = np.ma.getdata(sigma_clip(darkArr, sigma=5, iters=5))
     
         hdu = fits.PrimaryHDU(darkArrClipped)
-        hdu.writeto(os.path.join(inputdir, "dark.fits"), clobber = True)
+        hdu.writeto(os.path.join(calibdir, "dark.fits"), clobber = True)
     
-        darkExposure = afwImage.ExposureF(os.path.join(inputdir, "dark.fits"))
+        darkExposure = afwImage.ExposureF(os.path.join(calibdir, "dark.fits"))
         darkMaskedImage = darkExposure.getMaskedImage()
         
         
@@ -71,11 +70,11 @@ def createAndSubtractDark():
         darkCorrection(maskedImage, darkMaskedImage, 1.0, 1.0)
         
         fn = imlist[k]
-        name = "dd_" + str(fn[len(inputdir)+11:len(inputdir)+31]) + ".fits"
+        name = "dd_" + str(fn[len(outputdir)+3:len(fn)])
         
-        maskedImage.writeFits(os.path.join(inputdir, "postISR",name))
+        maskedImage.writeFits(os.path.join(outputdir,name))
 
-        if (i >= 5 and i < (len(imlist)-4)):
+        if (j >= 5 and j < (len(imlist)-4)):
             kbeg += 1
 
 
@@ -92,32 +91,39 @@ def runIsr():
     isrConfig.doFlat = True
     isrConfig.doAssembleCcd = False
     isrConfig.doFringe = False
+    isrConfig.doLinearize = False
     isrConfig.assembleCcd.doRenorm = False #We'll take care of gain in the flats
     isrConfig.assembleCcd.setGain = False
-    SofiIsrTask = SofiIsrTask(config = isrConfig)
+    sofiIsrTask = SofiIsrTask(config = isrConfig)
     
-    darkExposure = afwImage.ExposureF(os.path.join(inputdir,"calib", "dark10.fits"))
-    flatExposure = afwImage.ExposureF(os.path.join(inputdir,"calib","flat.fits"))
+    darkExposure = afwImage.ExposureF(os.path.join(calibdir, darkfn))
+    flatExposure = afwImage.ExposureF(os.path.join(calibdir, flatfn))
     
-    imlist = glob.glob(os.path.join(inputdir,"05feb_F02_S22_10_*.fits"))
+    imlist = glob.glob(os.path.join(inputdir,"F02_*.fits.gz"))
     
     for fn in imlist:
         rawExposure = afwImage.ExposureF(fn)
-        output = SofiIsrTask.runIsr(rawExposure, dark=darkExposure, flat=flatExposure)
-        name = "df_" + str(fn[len(inputdir):len(inputdir)+20]) + ".fits"
+        output = sofiIsrTask.runIsr(rawExposure, dark=darkExposure, flat=flatExposure)
+        name = "df_" + str(fn[len(inputdir):len(fn)-3])
         exposure = output.exposure
-        exposure.writeFits(os.path.join(inputdir, "postISR", name))
+        exposure.writeFits(os.path.join(outputdir, name))
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Demonstrate the use of IsrTask and DetectAndMeasureTask")
     parser.add_argument('--inputdir', default=".", help="Input directory")
+    parser.add_argument('--outputdir', default=".", help="Output directory")
+    parser.add_argument('--calibdir', default=".", help="Calib directory")
+    parser.add_argument('--flat', default="FLAT", help="Flat exposure name")
+    parser.add_argument('--dark', default="DARK", help="Dark exposure name")
     parser.add_argument('--debug', '-d', action="store_true", help="Load debug.py?", default=False)
-    parser.add_argument('--ds9', action="store_true", help="Display the result?", default=False)
-    parser.add_argument('--write', '-w', action="store_true", help="Write the result?", default=False)
     parser.add_argument('--display', action="store_true", help="Display the output image and source catalog", default=False)
     args = parser.parse_args()
     inputdir = args.inputdir
+    outputdir = args.outputdir
+    calibdir = args.calibdir
+    flatfn = args.flat
+    darkfn = args.dark
     
     if args.debug:
         try:
@@ -126,14 +132,5 @@ if __name__ == "__main__":
             print >> sys.stderr, e
 
     runIsr()
-    
-    if args.ds9:
-        im = exposure.getMaskedImage().getImage()
-        im_median = numpy.median(im.getArray())
-        ds9.mtv(im)
-        ds9.scale(min=im_median*0.90, max=im_median*1.1, type='SQRT')
-
-    if args.write:
-        exposure.writeFits("postISRCCD.fits")
 
     createAndSubtractDark()
