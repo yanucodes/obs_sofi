@@ -28,7 +28,7 @@ import sys
 import time
 import traceback
 import numpy as np
-
+from math import ceil
 import lsst.pex.config as pexConfig
 import lsst.pex.logging as pexLog
 import lsst.afw.geom as afwGeom
@@ -76,7 +76,7 @@ class WarpAndCoaddConfig(pexConfig.Config):
     coadd = pexConfig.ConfigField(dtype = coaddUtils.Coadd.ConfigClass, doc = "")
     warp = pexConfig.ConfigField(dtype = afwMath.Warper.ConfigClass, doc = "")
 
-def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
+def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, borders, config):
     """Create a coadd by warping and psf-matching
     
     Inputs:
@@ -110,8 +110,35 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
     numExposuresInCoadd = 0
     numExposuresFailed = 0
     
-    auxMaskedImage = afwImage.makeMaskedImage(afwImage.makeImageFromArray(np.zeros((1224,1224))))
+    
+    xmin, xmax, ymin, ymax = borders
+    
+    if xmin<0 and xmax>0:
+        NX = 1024+ceil(xmax)+ceil(-xmin)+10
+        dxaux = 517.0 + ceil(-xmin)
+    if ymin<0 and ymax>0:
+        NY = 1024+ceil(ymax)+ceil(-ymin)+10
+        dyaux = 517.0 + ceil(-ymin)
+    if xmin>0 and xmax>0:
+        NX = 1024+ceil(xmax)+10
+        dxaux = 517.0
+        print 'xmin>0'
+    if ymin>0 and ymax>0:
+        NY = 1024+ceil(ymax)+10
+        dyaux = 517.0
+        print 'ymin>0'
+    if ymin<0 and ymax<0:
+        NY = 1024+ceil(-ymin)+10
+        dyaux = 517.0 + ceil(-ymin)
+    if xmin<0 and xmax<0:
+        NX = 1024+ceil(-xmin)+10
+        dxaux = 517.0 + ceil(-xmin)
+
+
+    auxMaskedImage = afwImage.makeMaskedImage(afwImage.makeImageFromArray(np.zeros((int(NX),int(NY)))))
     aux = afwImage.makeExposure(auxMaskedImage)
+    
+    bkgmean = afwImage.MaskedImageF('bkgmean.fits')
     
     with file(exposureListPath, "rU") as infile:
         for exposurePath in infile:
@@ -128,6 +155,9 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
                 setPsf(exposure)
                 sd(exposure, display=False, threshold=5.0)
                 
+                mi = exposure.getMaskedImage()
+                mi+= bkgmean
+                
                 if config.saveDebugImages:
                     exposure.writeFits("exposure%s.fits" % (expNum,))
                 
@@ -140,8 +170,8 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
                     cd21, cd22 = exposure.getWcs().getCDMatrix()[1]
                     
                     metadata = exposure.getWcs().getFitsMetadata()
-                    metadata.setDouble("CRPIX1",     612.0)
-                    metadata.setDouble("CRPIX2",     612.0)
+                    metadata.setDouble("CRPIX1",     dxaux)
+                    metadata.setDouble("CRPIX2",     dyaux)
         
                     auxWcs = afwImage.makeWcs(metadata)
                     aux.setWcs(auxWcs)
@@ -201,6 +231,12 @@ def warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config):
                 continue
 
     coaddExposure = coadd.getCoadd()
+    arr = np.isnan(coaddExposure.getMaskedImage().getImage().getArray())
+    for i in range(int(NX)):
+        for k in range(int(NY)):
+            if arr[i,k]:
+                coaddExposure.getMaskedImage().getImage().set(k,i,0.0)
+
     coaddExposure.writeFits(coaddPath)
     print >> sys.stderr, "Wrote coadd: %s" % (coaddPath,)
     weightMap = coadd.getWeightMap()
@@ -244,6 +280,6 @@ where:
     
     config = WarpAndCoaddConfig()
     
-    xoffsets, yoffsets = offsets(coaddPath, exposureListPath, exposureDirPath)
+    xoffsets, yoffsets, borders = offsets(coaddPath, exposureListPath, exposureDirPath)
     
-    warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, config)
+    warpAndCoadd(coaddPath, exposureListPath, xoffsets, yoffsets, borders, config)

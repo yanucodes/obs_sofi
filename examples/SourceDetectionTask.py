@@ -37,13 +37,13 @@ from lsst.meas.algorithms.detection import SourceDetectionTask
 from lsst.meas.base import SingleFrameMeasurementTask
 from lsst.meas.base import BaseMeasurementTask
 
-def loadData():
+def loadData(inputdir, name):
     """Prepare the data we need to run the example"""
 
     # Load sample input from disk
-    inputdir = "."
+    #inputdir = "/LSST/SOFI/FIELDS/postISR/"
 
-    imFile = os.path.join(inputdir, "F02_S22_10_21-52.fits")
+    imFile = os.path.join(inputdir, name + ".fits")
 
     exposure = afwImage.ExposureF(imFile)
     
@@ -125,7 +125,8 @@ def run(exposure, display=False, framenumber=1, threshold=5.0):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Demonstrate the use of Source{Detection,Measurement}Task")
-
+    parser.add_argument("--dir", default="/LSST/SOFI/FIELDS/postISR/", help="Input directory")
+    parser.add_argument("--fn", default="coadd", help="Filename")
     parser.add_argument('--debug', '-d', action="store_true", help="Load debug.py?", default=False)
     parser.add_argument('--ds9', action="store_true", help="Display sources on ds9", default=False)
 
@@ -137,6 +138,8 @@ if __name__ == "__main__":
         except ImportError as e:
             print >> sys.stderr, e
 
-    exposure = loadData()
+    inputdir = args.dir
+
+    exposure = loadData(inputdir, args.fn)
 
     run(exposure, display=args.ds9)
