@@ -27,11 +27,15 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Create a special flat for SOFI")
     parser.add_argument("--inputdir", default=".", help="Input directory")
+    parser.add_argument("--outputdir", default=".", help="Output directory")
+    parser.add_argument("--prefix", default="D_10", help="Prefix")
     args = parser.parse_args()
     
     inputdir = args.inputdir
+    outputdir = args.outputdir
+    filename = args.prefix +"*.fits.gz"
 
-    flist = glob.glob(os.path.join(inputdir, "D_10*.fits.gz"))
+    flist = glob.glob(os.path.join(inputdir, filename))
     
     olddata, newheader = fits.getdata(flist[0], header=True)
     newheader.remove('ESO DET CHIP PXSPACE')
@@ -40,5 +44,7 @@ if __name__ == "__main__":
 
     hdu = fits.PrimaryHDU(dark)
     hdu.header = newheader
+    
+    fn = args.prefix+".fits"
 
-    hdu.writeto("dark10.fits", clobber=True)
+    hdu.writeto(os.path.join(outputdir, fn), clobber=True)
