@@ -23,20 +23,12 @@
 import numpy
 import lsst.afw.cameraGeom as cameraGeom
 import lsst.afw.geom as afwGeom
-from lsst.afw.table import AmpInfoCatalog, AmpInfoTable, LL
+import lsst.afw.table as afwTable
 from lsst.afw.cameraGeom.cameraFactory import makeDetector
 
 
 class Sofi(cameraGeom.Camera):
-    """The monocam Camera
-
-    There is one ccd with name "0"
-    It has sixteen amplifiers with names like "00".."07" and "10".."17"
-
-    Standard keys are:
-    amp: amplifier name: one of 00, 01, 02, 03, 04, 05, 06, 07, 10, 11, 12, 13, 14, 15, 16, 17
-    ccd: ccd name: always 0
-    visit: exposure number; this will be provided by the DAQ
+    """describe the SOFI Camera here
     """
     # Taken from fit4_20160413-154303.pdf
     gain = {(0, 0): 5.271,
@@ -59,20 +51,24 @@ class Sofi(cameraGeom.Camera):
         pupilToFocalPlane = afwGeom.InvertedXYTransform(focalPlaneToPupil)
         cameraTransformMap = cameraGeom.CameraTransformMap(cameraGeom.FOCAL_PLANE,
                                                            {cameraGeom.PUPIL: pupilToFocalPlane})
-        detectorList = self._makeDetectorList(pupilToFocalPlane, plateScale)
+        detectorList = self._makeDetectorList()
         cameraGeom.Camera.__init__(self, "sofi", detectorList, cameraTransformMap)
 
-    def _makeDetectorList(self, focalPlaneToPupil, plateScale):
+    def _makeDetectorList(self):
         """!Make a list of detectors
 
         @param[in] focalPlaneToPupil  lsst.afw.geom.XYTransform from FOCAL_PLANE to PUPIL coordinates
         @param[in] plateScale  plate scale, in angle on sky/mm
         @return a list of detectors (lsst.afw.cameraGeom.Detector)
         """
+        plateScale = afwGeom.Angle((0.288/0.0185), afwGeom.arcseconds)  # plate scale, in angle on sky/mm
+        radialDistortion = 0.  # radial distortion in mm/rad^2
+        radialCoeff = numpy.array((0.0, 1.0, 0.0, radialDistortion)) / plateScale.asRadians()
+        focalPlaneToPupil = afwGeom.RadialXYTransform(radialCoeff)
         detectorList = []
         detectorConfigList = self._makeDetectorConfigList()
         for detectorConfig in detectorConfigList:
-            ampInfoCatalog = self._makeAmpInfoCatalog()
+            ampInfoCatalog = self._makeAmpInfoCatalog(2, 2, 512, 512, 0, 0, 12, 0, False)
             detector = makeDetector(detectorConfig, ampInfoCatalog, focalPlaneToPupil,
                                     plateScale.asArcseconds())
             detectorList.append(detector)
@@ -108,18 +104,26 @@ class Sofi(cameraGeom.Camera):
         detConfig.rollDeg = 0.0
         return [detConfig]
 
-    def _makeAmpInfoCatalog(self):
+    def _makeAmpInfoCatalog(self, nAmpX, nAmpY, nPixX, nPixY, pre, hOscan, vOscan, ext, isPerAmp):
         """Construct an amplifier info catalog
+            \param[in] nAmpX -- Number of amps in the x direction
+            \param[in] nAmpY -- Number of amps in the y direction
+            \param[in] nPixX -- Number of pixels in the amp in the x direction
+            \param[in] nPixY -- Number of pixels in the amp in the y direction
+            \param[in] pre -- Number of prescan rows
+            \param[in] hOscan -- Number of horizontal overscan columns
+            \param[in] vOscan -- Number of vertical overscan rows
+            \param[in] ext -- Number of pixels in the extended register
+            \param[in] isPerAmp -- Are the raw amp data in separate images?
         """
 
         schema = afwTable.AmpInfoTable.makeMinimalSchema()
-        ampCatalog = AmpInfoCatalog(schema)
+        ampCatalog = afwTable.AmpInfoCatalog(schema)
         
         iy = 0
         for ix in range(nAmpX):
             record = ampCatalog.addNew()
-            self.populateAmpBoxes(nPixX, nPixY, pre, hOscan, 0, ext, ix, iy,
-                         isPerAmp, record)
+            self.populateAmpBoxes(nPixX, nPixY, pre, hOscan, 0, ext, ix, iy, isPerAmp, record)
         iy = 1
         for ix in range(nAmpX):
             record = ampCatalog.addNew()
@@ -129,7 +133,7 @@ class Sofi(cameraGeom.Camera):
         return ampCatalog
 
 
-    def populateAmpBoxes(nx, ny, nprescan, nhoverscan, nvoverscan, nextended, ix, iy,
+    def populateAmpBoxes(self, nx, ny, nprescan, nhoverscan, nvoverscan, nextended, ix, iy,
                       isPerAmp, record):
         '''!Fill ampInfo tables
         \param[in] isPerAmp -- If True, return a dictionary of amp exposures keyed by amp name.

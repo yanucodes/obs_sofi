@@ -7,7 +7,7 @@ from lsst.pipe.tasks.ingestCalibs import CalibsParseTask
 # Lookup table for lab data
 # XXX This is completely made up and needs to be updated with the real values when they become available.
 filters = {
-    0: 'K',
+    0: 'Ks',
     "UNK": "UNKNOWN",
 }
 
@@ -58,7 +58,8 @@ class SofiIngestTask(IngestTask):
     """
     def run(self, args):
         """Open the database"""
-        getDatabase(args.butler.repository._mapper.root)
+        #getDatabase(args.butler.repository._mapper.root)
+        #(see lsst.obs.monocam.hack.getDatabase)
         return IngestTask.run(self, args)
 
 
@@ -77,6 +78,3 @@ class SofiCalibsParseTask(CalibsParseTask):
 
     def translate_filter(self, md):
         return self._translateFromCalibId("filter", md)
-
-    def translate_calibDate(self, md):
-        return self._translateFromCalibId("calibDate", md)

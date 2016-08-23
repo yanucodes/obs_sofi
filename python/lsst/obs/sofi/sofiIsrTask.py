@@ -22,7 +22,7 @@
 import lsst.ip.isr as ip_isr
 import lsst.pipe.base as pipe_base
 
-class MonocamIsrTask(ip_isr.IsrTask):
+class SofiIsrTask(ip_isr.IsrTask):
     @pipe_base.timeMethod
     def run(self, ccdExposure, bias=None, dark=None,  flat=None, defects=None, fringes=None, bfKernel=None):
         """!Perform instrument signature removal on an exposure

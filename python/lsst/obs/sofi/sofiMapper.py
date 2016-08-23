@@ -25,6 +25,7 @@ import lsst.afw.image.utils as afwImageUtils
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 from lsst.daf.butlerUtils import CameraMapper
+import lsst.daf.persistence as dafPersist
 import lsst.pex.policy as pexPolicy
 from makeCamera import Sofi
 
@@ -42,7 +43,7 @@ class SofiMapper(CameraMapper):
 
         CameraMapper.__init__(self, policy, policyFile.getRepositoryPath(), **kwargs)
 
-        getDatabase(kwargs["root"])
+        #getDatabase(kwargs["root"]) #(see lsst.obs.monocam.hack.getDatabase)
 
         # Ensure each dataset type of interest knows about the full range of keys available from the registry
         keys = {'expNum': int,
@@ -51,7 +52,7 @@ class SofiMapper(CameraMapper):
                 'dateObs': str,
                 'expTime': float,
         }
-        for name in ("raw", "raw_amp",
+        for name in ("raw",
                      # processCcd outputs
                      "postISRCCD", "calexp", "postISRCCD", "src", "icSrc", "srcMatch",
                      ):
@@ -155,6 +156,9 @@ class SofiMapper(CameraMapper):
 
     def std_flat(self, item, dataId):
         return self.standardizeCalib("flat", item, dataId)
+
+    def map_MakeCalibs_config(self, dataId, write):
+        return dafPersist.ButlerLocation("str", "str", "calib", "/LSST/SOFI/NEW", {}, self)
 
 def removeKeyword(md, key):
     """Remove a keyword from a header without raising an exception if it doesn't exist"""
