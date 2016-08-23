@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 
 def blkavg(arr,x1,x2,y1,y2):
     arr = arr[x1:x2,y1:y2]
-    
-    plt.imshow(arr)
-    plt.show()
-    
     arr = arr.reshape((arr.shape[0], -1, 1))
     arr = np.mean(arr, axis=1)
 
@@ -34,9 +30,6 @@ def createFlat(flist):
     tempOffMask = tempFlats[1]
     tempOnMask = tempFlats[2]
     tempOn = tempFlats[3]
-    
-    plt.imshow(tempOff)
-    plt.show()
 
     tempOnA = blkavg(tempOn, 0, 1024, 500, 600)
     tempOnC = blkavg(tempOnMask, 0, 1024, 500, 600)
@@ -76,16 +69,21 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Create a special flat for SOFI")
     parser.add_argument("--inputdir", default=".", help="Input directory")
-    parser.add_argumetn("--outputdir", default=".", help="Input directory")
+    parser.add_argument("--outputdir", default=".", help="Output directory")
+    parser.add_argument("--prefix", default="FLAT_", help="Prefix")
     args = parser.parse_args()
     
     inputdir = args.inputdir
-    outputdir = arg.outputdir
+    outputdir = args.outputdir
+    filename = args.prefix +"*.fits"
 
-    flist = glob.glob(os.path.join(inputdir, "FLAT_06Feb*.fits"))
+    flist = glob.glob(os.path.join(inputdir, filename))
+    print flist
 
     specialFlat = createFlat(flist)
 
     hdu = fits.PrimaryHDU(specialFlat)
+    
+    fn = args.prefix + ".fits"
 
-    hdu.writeto(os.path.join(outputdir,"flat.fits"))
+    hdu.writeto(os.path.join(outputdir,fn), clobber=True)
