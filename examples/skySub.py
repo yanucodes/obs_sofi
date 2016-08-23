@@ -104,6 +104,7 @@ def calculateBkg(exposure, binSize = 256, algorithm = "NATURAL_SPLINE"):
 
     # compute mean and variance of the background
     backgroundImage = background.getImage()
+    bkgArr = backgroundImage.getArray()
     s = afwMath.makeStatistics(backgroundImage, afwMath.MEAN | afwMath.VARIANCE)
     bgmean = s.getValue(afwMath.MEAN)
     bgvar = s.getValue(afwMath.VARIANCE)
@@ -119,15 +120,20 @@ def calculateBkg(exposure, binSize = 256, algorithm = "NATURAL_SPLINE"):
     return bgmean, bgvar
 
 
-def scale(inputdir):
+def scale(inputdir,pointing):
     
-    infile = glob.glob(os.path.join(inputdir, "dd_05feb_F02_S22_10_*.fits"))
+    expPath = inputdir[0:14]+"/FIELDS/"+ pointing
+    infiles = glob.glob(os.path.join(expPath, "offsets.*.txt"))
+    f = open(infiles[0], 'r')
+    infile = f.readlines()
     
     avgscale = 0.0
     scale = []
     data = []
     bkgs = []
-    for file in infile:
+    for fil in infile:
+        file = fil.split()[0]
+        file = str(os.path.join(inputdir,file[0:len(file)-7]))
         exposure = afwImage.ExposureF(file)
         data.append(exposure.getMaskedImage().getImage().getArray())
         exposure1 = afwImage.ExposureF(file)
@@ -138,11 +144,17 @@ def scale(inputdir):
 
     avgscale = avgscale/len(infile)
     print(avgscale)
+    
+    bkgmean = np.zeros((1024,1024))
+
+    for i in range(1024):
+        for k in range(1024):
+            bkgmean[i,k]=avgscale
 
     for i in range(len(scale)):
         scale[i]=avgscale-scale[i]
 
-    return scale, data, bkgs
+    return scale, data, bkgs, bkgmean
 
 def kselect(a, n):
     
@@ -168,9 +180,10 @@ def medplane(data, scale):
 
     return plane
 
-def gainMap(flat):
+def gainMap(flat, calibdir, pointing):
     
-    m = mode(flat)
+    #m = np.mode(flat)
+    m = np.median(flat.getMaskedImage().getImage().getArray())
     
     #mean, var = calculateBkg(flat, binSize = 2048, algorithm = "CONSTANT")
     mi = flat.getMaskedImage()
@@ -219,7 +232,7 @@ def gainMap(flat):
 
 
     hdu = fits.PrimaryHDU(gain)
-    hdu.writeto('gain.fits', clobber = True)
+    hdu.writeto(os.path.join(calibdir,'gain'+pointing+'.fits'), clobber = True)
 
     return gain
 
@@ -277,7 +290,8 @@ def skysub(data, bkg, gainmap, sky):
     
     nx, ny = data.shape
     
-    skybkg = modeFromArray(sky)
+    #skybkg = modeFromArray(sky)
+    skybkg = np.median(sky)
     
     imgout = np.zeros((nx,ny))
 
@@ -294,23 +308,28 @@ def skysub(data, bkg, gainmap, sky):
 
     return imgout
 
-def skyfilter(data, bkgs, gain, inputdir):
+def skyfilter(data, bkgs, gain, inputdir, pointing):
     
     gainmap = gain
     hwid = 3
 
     skybeg = 0
     
-    expPath = "/LSST/SOFI_RUN2/FIELDS/"
+    expPath = inputdir[0:14]+"/FIELDS/"+ pointing
+    print(expPath)
     
-    infile = glob.glob(os.path.join(expPath, "05feb*.fits"))
-    print(infile)
+    expPath = inputdir[0:14]+"/FIELDS/"+ pointing
+    infiles = glob.glob(os.path.join(expPath, "offsets.*.txt"))
+    f = open(infiles[0], 'r')
+    infile = f.readlines()
     
+    """
     for i in range(len(data)):
         bkgs[i] = modeFromArray(data[i])
+        """
 
     for i in range(len(data)):
-        
+        print(i)
         avgscale = 0.0
         skyend = skybeg + 2*hwid + 1
         scale = []
@@ -330,32 +349,19 @@ def skyfilter(data, bkgs, gain, inputdir):
         sky = medplane(buf, scale)
 
         fimg = skysub(data[i], bkgs[i], gainmap, sky)
-        """
-        exposure = afwImage.ExposureF(infile[i])
-        
-        for x in range(1024):
-            for y in range(1024):
-                print(dir(exposure))
-                print(dir(exposure.getMaskedImage()))
-                print(dir(exposure.getMaskedImage().getImage()))
-                exposure.getMaskedImage().set(x,y,fimg[x,y])
-        
-        name = "bs_" + str(infile[30,43]) + ".fits"
-        """
+
         #exposure.writeFits(os.path.join(inputdir, name))
-        print(i)
-        print(infile[i])
-        fn = infile[i]
-        name = "bs_" + str(fn[len(expPath):len(expPath)+20]) + ".fits"
-        olddata, newheader = fits.getdata(infile[i], header=True)
+        fn = infile[i].split()[0]
+        print(expPath)
+        name = "bs_" + str(fn[3:len(fn)-7])
+        print(name)
+        olddata, newheader = fits.getdata(os.path.join(expPath, fn[3:len(fn)-7]+'.gz'), header=True)
         
         newheader.remove('ESO DET CHIP PXSPACE')
         
         hdu = fits.PrimaryHDU(fimg)
-        #name = "skysub"+str(i)+".fits"
         hdu.header = newheader
         hdu.writeto(os.path.join(inputdir,name), clobber = True)
-        #writefits!
         print("done")
 
         if (i >= hwid and i < (len(data)-hwid - 1)):
@@ -369,37 +375,38 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Calculate mean plane of the images")
     parser.add_argument("--inputdir", default=".", help="Input directory")
-    parser.add_argument('--write', '-w', action="store_true", help="Write the result?", default=False)
     parser.add_argument('--flat', action="store_true", help="Calculate flat?", default=False)
+    parser.add_argument('--gain', action="store_true", help="Creat gain?", default=False)
+    parser.add_argument('--pointing', default="D", help="Pointing")
     args = parser.parse_args()
     
     inputdir = args.inputdir
     
-    scale, data, bkgs = scale(inputdir)
+    calibdir = inputdir[0:14] + "/CALIBS/"
+    pointing = args.pointing
+    
+    scale, data, bkgs, bkgmean = scale(inputdir,pointing)
     
     if args.flat:
         
         plane = medplane(data, scale)
         hdu = fits.PrimaryHDU(plane)
-        hdu.writeto('flat.fits', clobber = True)
+        hdu.writeto(os.path.join(calibdir,'flat'+pointing+'.fits'), clobber = True)
         print("created flat")
+    
+    hdu = fits.PrimaryHDU(bkgmean)
+    hdu.writeto(os.path.join(calibdir,'bkgmean'+pointing+'.fits'), clobber = True)
 
 
-    flatExp = afwImage.ExposureF("flat.fits")
+    flatExp = afwImage.ExposureF(os.path.join(calibdir,'flat'+pointing+'.fits'))
     flat = flatExp.getMaskedImage()
+    if args.gain:
+        gain = gainMap(flatExp, calibdir, pointing)
+        print("created gainmap")
+    else:
+        exp1 = afwImage.ExposureF(os.path.join(calibdir,'gain'+pointing+'.fits'))
+        gain = exp1.getMaskedImage().getImage().getArray()
 
-    gain = gainMap(flatExp)
 
-    print("created gainmap")
 
-    exp1 = afwImage.ExposureF("gain.fits")
-    #exp2 = afwImage.ExposureF("gain.F02_S22_10_21-52.fits")
-
-    #mi1 = exp1.getMaskedImage()
-    #mi2 = exp2.getMaskedImage()
-
-    #mi1 -= mi2
-
-    #mi1.writeFits("imdif.fits")
-
-    skyfilter(data, bkgs, gain, inputdir)
+    skyfilter(data, bkgs, gain, inputdir, pointing)
