@@ -1,12 +1,12 @@
 #<?cfg paf policy ?>
 
-needCalibRegistry: true
+needCalibRegistry: false
 
 defaultLevel: "Ccd"
 
 exposures: {
     raw: {
-        template:    "FIELDS/%(dateObs)s_F02_%(pointing)s_%(expTime)d_%(expNum)03d.fits"
+        template:    "FIELDS/%(pointing)s_%(dateObs)s/F02_%(pointing)s_%(expTime)d_%(expNum)03d.fits"
         python:     "lsst.afw.image.DecoratedImageU"
         persistable: "DecoratedImageU"
         storage:     "FitsStorage"
@@ -22,7 +22,7 @@ exposures: {
         tables:        raw
     }
     icExp: {
-        template:      "icExp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
+        template:      "FIELDS/icExp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
@@ -30,7 +30,7 @@ exposures: {
         tables:        raw
     }
     calexp: {
-        template:      "calexp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
+        template:      "FIELDS/calexp/%(dateObs)s_F02_%(pointing)s_%(exptime)d_%(expNum)03d.fits"
         python:        "lsst.afw.image.ExposureF"
         persistable:        "ExposureF"
         storage:    "FitsStorage"
@@ -39,7 +39,7 @@ exposures: {
     }
 
     coaddTempExp: {
-        template:    "coaddTempExp/coadd_%(pointing)s.fits"
+        template:    "FIELDS/coaddTempExp/coadd_%(pointing)s.fits"
         python:      "lsst.afw.image.exposureF"
         persistable: "exposureF"
         storage:     "FitsStorage"
