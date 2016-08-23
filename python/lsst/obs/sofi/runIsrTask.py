@@ -5,7 +5,7 @@ import makeCamera
 import sys, numpy
 import lsst.afw.image as afwImage
 import lsst.afw.geom as afwGeom
-from lsst.obs.sofi.makeCamera import createDetector
+from lsst.obs.sofi.makeCamera import Sofi
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
@@ -14,7 +14,7 @@ class SofiIsrTaskConfig(IsrTask.ConfigClass):
     doOverscan = pexConfig.Field(
         dtype = bool,
         doc = "Apply overscan correction?",
-        default = True,
+        default = False,
         )
         
     def setDefaults(self):
@@ -67,9 +67,11 @@ class SofiIsrTask(IsrTask):
     @pipeBase.timeMethod
     def runIsr(self, rawExposure, dark=None,  flat=None):
         '''Run the task to do ISR on a ccd'''
+        
+        sofi = makeCamera.Sofi()
 
-        det = createDetector(2, 2, 512, 512, 0, 0, 0, 0, False)
-        rawExposure.setDetector(det['detector'])
+        detectorList = sofi._makeDetectorList()
+        rawExposure.setDetector(detectorList[0])
         
         maskedExposure = rawExposure.getMaskedImage()
         
